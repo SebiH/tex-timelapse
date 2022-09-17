@@ -1,0 +1,6 @@
+overleaf.zip
+overleaf/
+
+# temp workdirs
+output/
+tmp/
