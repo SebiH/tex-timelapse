@@ -1,6 +1,7 @@
 #!/bin/py
 
 from multiprocessing.pool import ThreadPool
+from shutil import rmtree
 import git
 import subprocess
 import os
@@ -23,17 +24,17 @@ maxRows = 3
 texFile = 'paper.tex'
 texFolder = 'overleaf'
 
-useMultithreading = False
+useMultithreading = True
 maxWorkers = 16
 
 debugMode = False
 
 # worksteps
 should = {
-    'initRepo': False,
-    'compilePdf': False,
-    'pdfToImage': False,
-    'compileImages': False,
+    'initRepo': True,
+    'compilePdf': True,
+    'pdfToImage': True,
+    'compileImages': True,
     'renderVideo': True
 }
 
@@ -68,8 +69,9 @@ def initRepo(commit):
     workDir = getWorkDir(commit)
     copy_tree(f'./{texFolder}/.git', f'{workDir}/.git')
     cmd = f'git reset --hard {commit.hexsha}'
-    process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, cwd=workDir)
+    process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout, cwd=workDir)
     process.wait()
+    rmtree(f'{workDir}/.git')
 
 
 def compilePdf(commit):
