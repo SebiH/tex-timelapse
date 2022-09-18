@@ -24,7 +24,7 @@ maxRows = 3
 texFile = 'paper.tex'
 texFolder = 'overleaf'
 
-useMultithreading = True
+useMultithreading = False
 maxWorkers = 16
 
 debugMode = False
@@ -82,23 +82,33 @@ def compilePdf(commit):
 
 def pdfToImage(commit):
     try:
-        cmd = f'wsl pdftoppm paper.pdf -png __visualizer__'
-        process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout, cwd=getWorkDir(commit))
+        workDir = getWorkDir(commit)
+        cmd = f'./pdftopng.exe {workDir}/paper.pdf {workDir}/__visualizer__'
+        process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout)
         process.wait()
     except Exception as e:
         print(e)
 
-def compileImages(commit):
+def compileImages(commit: git.Commit):
     try:
         workDir = getWorkDir(commit)
         images = [Image.open(x) for x in glob(f'{workDir}/__visualizer__*.png')]
+        if (len(images) == 0):
+            raise Exception(f'No images found for {commit.hexsha}')
+
         while (len(images) < maxRows * maxColumns):
             images.append(Image.new('RGB', (1275, 1651), color='white'))
         while ((len(images)) >= maxRows * maxColumns):
             images.pop()
 
+        for i in range(len(images)):
+            if i % 2 != 0:
+                images[i] = images[i].crop((200, 130, 1150, 1380))
+            else:
+                images[i] = images[i].crop((130, 130, 1080, 1380))
+
         img = pil_grid(images, maxColumns)
-        img.save(f'output/commit_{commit.committed_date}.png')
+        img.save(f'output/commit_{commit.authored_date}.png')
     except Exception as e:
         print(e)
 
@@ -111,6 +121,7 @@ def execute(function, jobs):
             ), jobs)
         else:
             for job in jobs:
+                bar.text = job.hexsha
                 function(job)
                 bar()
 
@@ -143,21 +154,21 @@ else:
 print('Compiling images')
 if should['compileImages']:
     execute(compileImages, jobs)
+    i = 0
+    for file in sorted(glob('output/commit_*.png')):
+        os.replace(file, os.path.join('output', f'{i:04d}.png'))
+        i += 1
+
 else:
     print('Skipping')
 
 pool.close()
 pool.join()
 
-i = 0
-for file in sorted(glob('output/commit_*.png')):
-    os.replace(file, os.path.join('output', f'{i}.png'))
-    i += 1
-
 
 print('Rendering video')
 if should['renderVideo']:
-    cmd = f'ffmpeg -y -framerate 5 -start_number 0 -i %d.png -c:v libx264 -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2 {outputFile}'
+    cmd = f'ffmpeg -y -framerate 5 -start_number 0 -i %04d.png -c:v libx264 -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2 {outputFile}'
     process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout, cwd='./output')
     stdout, stderr = process.communicate()
 else:
