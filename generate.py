@@ -1,4 +1,4 @@
-#!/bin/py
+#!/usr/bin/env python3
 
 from multiprocessing.pool import ThreadPool
 from shutil import rmtree
