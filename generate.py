@@ -1,13 +1,50 @@
 #!/bin/py
 
+from multiprocessing.pool import ThreadPool
 import git
-import datetime
 import subprocess
 import os
 from PIL import Image
 from distutils.dir_util import copy_tree, remove_tree
 from glob import glob
 import numpy as np
+from multiprocessing import Pool
+from alive_progress import alive_bar
+
+############################
+# Constants
+############################
+workDir = './tmp'
+outputFile = 'out.mp4'
+
+maxColumns = 8
+maxRows = 3
+
+texFile = 'paper.tex'
+texFolder = 'overleaf'
+
+useMultithreading = False
+maxWorkers = 16
+
+debugMode = False
+
+# worksteps
+should = {
+    'initRepo': False,
+    'compilePdf': False,
+    'pdfToImage': False,
+    'compileImages': False,
+    'renderVideo': True
+}
+
+
+############################
+# Code
+############################
+if debugMode:
+    stdout = subprocess.PIPE
+else:
+    stdout = subprocess.DEVNULL
 
 # see https://stackoverflow.com/a/46877433/4090817
 def pil_grid(images, max_horiz=np.iinfo(int).max):
@@ -24,56 +61,93 @@ def pil_grid(images, max_horiz=np.iinfo(int).max):
         im_grid.paste(im, (h_sizes[i % n_horiz], v_sizes[i // n_horiz]))
     return im_grid
 
+def getWorkDir(commit):
+    return os.path.join(workDir, commit.hexsha)
+
+def initRepo(commit):
+    workDir = getWorkDir(commit)
+    copy_tree(f'./{texFolder}/.git', f'{workDir}/.git')
+    cmd = f'git reset --hard {commit.hexsha}'
+    process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, cwd=workDir)
+    process.wait()
 
 
-repo = git.Repo('overleaf')
-i = len(list(repo.iter_commits())) - 1
-processes = []
-for commit in repo.iter_commits():
-    print(f"{commit.committed_datetime.strftime('%Y-%m-%d_%H%M%S')}: {commit.hexsha}")
-    workDir = f"./tmp/{commit.hexsha}"
-    copy_tree("./overleaf/.git", f"{workDir}/.git")
+def compilePdf(commit):
+    cmd = f'latexmk -pdf -interaction=nonstopmode {texFile}'
+    process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout, cwd=getWorkDir(commit))
+    process.wait()
 
-    initializeRepo = f'git reset --hard {commit.hexsha}'
-    compilePdf = f'latexmk -pdf -interaction=nonstopmode paper.tex'
-    pdfToImage = f'wsl pdftoppm paper.pdf -png __visualizer__'
 
-    process = subprocess.Popen(initializeRepo.split(), stdout=subprocess.PIPE, cwd=workDir)
-    # stdout, stderr = process.communicate()
-    processes.append(process)
+def pdfToImage(commit):
+    try:
+        cmd = f'wsl pdftoppm paper.pdf -png __visualizer__'
+        process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout, cwd=getWorkDir(commit))
+        process.wait()
+    except Exception as e:
+        print(e)
 
-for p in processes:
-    p.wait()
-processes = []
+def compileImages(commit):
+    try:
+        workDir = getWorkDir(commit)
+        images = [Image.open(x) for x in glob(f'{workDir}/__visualizer__*.png')]
+        while (len(images) < maxRows * maxColumns):
+            images.append(Image.new('RGB', (1275, 1651), color='white'))
+        while ((len(images)) >= maxRows * maxColumns):
+            images.pop()
 
-for commit in repo.iter_commits():
-    workDir = f"./tmp/{commit.hexsha}"
-    process = subprocess.Popen(compilePdf.split(), stdout=subprocess.PIPE, cwd=workDir)
-    # stdout, stderr = process.communicate()
-    processes.append(process)
+        img = pil_grid(images, maxColumns)
+        img.save(f'output/commit_{commit.committed_date}.png')
+    except Exception as e:
+        print(e)
 
-for p in processes:
-    p.wait()
-processes = []
+def execute(function, jobs):
+    with alive_bar(len(jobs)) as bar:
+        if useMultithreading:
+            pool.map(lambda commit: (
+                function(commit),
+                bar()
+            ), jobs)
+        else:
+            for job in jobs:
+                function(job)
+                bar()
 
-for commit in repo.iter_commits():
-    workDir = f"./tmp/{commit.hexsha}"
-    process = subprocess.Popen(pdfToImage.split(), stdout=subprocess.PIPE, cwd=workDir)
-    # stdout, stderr = process.communicate()
-    processes.append(process)
 
-    images = [Image.open(x) for x in glob(f'{workDir}/__visualizer__*.png')]
-    img = pil_grid(images, 8)
-    img.save(f'output/{i}.png')
-    i -= 1
+repo = git.Repo(texFolder)
+jobs = list(repo.iter_commits(max_count=10))
+pool = ThreadPool(maxWorkers)
 
-# for commit in repo.iter_commits():
-    # remove_tree(workDir)
+print('Initializing repositories')
+if should['initRepo']:
+    execute(initRepo, jobs)
+else:
+    print('Skipping')
 
-for p in processes:
-    p.wait()
-processes = []
+print('Compiling PDF')
+if should['compilePdf']:
+    execute(compilePdf, jobs)
+else:
+    print('Skipping')
 
-renderVideo = f'ffmpeg -y -framerate 10 -i %d.png -c:v libx264 -pix_fmt yuv420p -vf pad=ceil(iw/2)*2:ceil(ih/2)*2 out.mp4'
-process = subprocess.Popen(renderVideo.split(), stdout=subprocess.PIPE, cwd='./output')
-stdout, stderr = process.communicate()
+print('Converting PDF to image')
+if should['pdfToImage']:
+    execute(pdfToImage, jobs)
+else:
+    print('Skipping')
+
+print('Compiling images')
+if should['compileImages']:
+    execute(compileImages, jobs)
+else:
+    print('Skipping')
+
+pool.close()
+pool.join()
+
+print('Rendering video')
+if should['renderVideo']:
+    renderVideo = f'ffmpeg -y -framerate 10 -i %d.png -c:v libx264 -pix_fmt yuv420p -vf pad=ceil(iw/2)*2:ceil(ih/2)*2 {outputFile}'
+    process = subprocess.Popen(renderVideo.split(), stdout=stdout, stderr=stdout, cwd='./output')
+    stdout, stderr = process.communicate()
+else:
+    print('Skipping')
