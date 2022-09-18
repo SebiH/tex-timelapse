@@ -113,9 +113,12 @@ def execute(function, jobs):
                 bar()
 
 
-repo = git.Repo(texFolder)
-jobs = list(repo.iter_commits(max_count=10))
 pool = ThreadPool(maxWorkers)
+repo = git.Repo(texFolder)
+if debugMode:
+    jobs = list(repo.iter_commits(max_count=10))
+else:
+    jobs = list(repo.iter_commits())
 
 print('Initializing repositories')
 if should['initRepo']:
