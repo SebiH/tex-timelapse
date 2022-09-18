@@ -144,10 +144,16 @@ else:
 pool.close()
 pool.join()
 
+i = 0
+for file in sorted(glob('output/commit_*.png')):
+    os.replace(file, os.path.join('output', f'{i}.png'))
+    i += 1
+
+
 print('Rendering video')
 if should['renderVideo']:
-    renderVideo = f'ffmpeg -y -framerate 10 -i %d.png -c:v libx264 -pix_fmt yuv420p -vf pad=ceil(iw/2)*2:ceil(ih/2)*2 {outputFile}'
-    process = subprocess.Popen(renderVideo.split(), stdout=stdout, stderr=stdout, cwd='./output')
+    cmd = f'ffmpeg -y -framerate 5 -start_number 0 -i %d.png -c:v libx264 -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2 {outputFile}'
+    process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout, cwd='./output')
     stdout, stderr = process.communicate()
 else:
     print('Skipping')
