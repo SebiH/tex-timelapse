@@ -5,7 +5,7 @@ from shutil import rmtree
 import git
 import subprocess
 import os
-from PIL import Image
+from PIL import Image, ImageFilter
 from distutils.dir_util import copy_tree, remove_tree
 from glob import glob
 import numpy as np
@@ -18,7 +18,7 @@ from alive_progress import alive_bar
 workDir = './tmp'
 outputFile = 'out.mp4'
 
-maxColumns = 8
+maxColumns = 7
 maxRows = 3
 
 texFile = 'paper.tex'
@@ -46,6 +46,8 @@ if debugMode:
     stdout = subprocess.PIPE
 else:
     stdout = subprocess.DEVNULL
+
+pdfFile = texFile.replace('.tex', '.pdf')
 
 # see https://stackoverflow.com/a/46877433/4090817
 def pil_grid(images, max_horiz=np.iinfo(int).max):
@@ -83,7 +85,7 @@ def compilePdf(commit):
 def pdfToImage(commit):
     try:
         workDir = getWorkDir(commit)
-        cmd = f'./pdftopng.exe {workDir}/paper.pdf {workDir}/__visualizer__'
+        cmd = f'./pdftopng.exe {workDir}/{pdfFile} {workDir}/__visualizer__'
         process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout)
         process.wait()
     except Exception as e:
@@ -92,7 +94,7 @@ def pdfToImage(commit):
 def compileImages(commit: git.Commit):
     try:
         workDir = getWorkDir(commit)
-        images = [Image.open(x) for x in glob(f'{workDir}/__visualizer__*.png')]
+        images = [Image.open(x).filter(ImageFilter.BLUR) for x in glob(f'{workDir}/__visualizer__*.png')]
         if (len(images) == 0):
             raise Exception(f'No images found for {commit.hexsha}')
 
@@ -170,6 +172,6 @@ print('Rendering video')
 if should['renderVideo']:
     cmd = f'ffmpeg -y -framerate 5 -start_number 0 -i %04d.png -c:v libx264 -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2 {outputFile}'
     process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout, cwd='./output')
-    stdout, stderr = process.communicate()
+    process.wait()
 else:
     print('Skipping')
