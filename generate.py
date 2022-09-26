@@ -9,40 +9,69 @@ from PIL import Image, ImageFilter
 from distutils.dir_util import copy_tree, remove_tree
 from glob import glob
 import numpy as np
-from multiprocessing import Pool
 from alive_progress import alive_bar
+import argparse
+
+
+############################
+# Argument parsing
+############################
+parser = argparse.ArgumentParser(description='Visualize the creation of a LaTeX document.')
+parser.add_argument('pathToTexFile', type=str,
+                    help='Path to main tex file (should include .git folder!)', default='source/main.tex')
+
+parser.add_argument('--output', type=str,
+                    help='Output video filename.', default='output.mp4')
+
+parser.add_argument('--rows', type=int,
+                    help='Number of rows in final video.', default=3)
+
+parser.add_argument('--columns', type=int,
+                    help='Number of columns in final video.', default=6)
+
+parser.add_argument('--use-multithreading', dest='useMultithreading',
+                    help='Use multithreading (use with caution - may lead to bugs).',
+                    action='store_true')
+parser.add_argument('--workers', type=int,
+                    help='Number of worker threads (requires multithreading).', default=16)
+
+parser.add_argument('--test-run', dest='testrun', action='store_true',
+                    help='Performs a quick test run with 10 commits and prints output to console. Useful for debugging.')
+
+parser.add_argument('--skip-step', dest='skip', type=int, default=0,
+                    help='Skips specified worksteps.')
+
+args = parser.parse_args()
+
 
 ############################
 # Constants
 ############################
 workDir = './tmp'
-outputFile = 'out.mp4'
 
-maxColumns = 7
-maxRows = 3
+texFile = os.path.basename(args.pathToTexFile)
+texFolder = os.path.dirname(args.pathToTexFile)
 
-texFile = 'paper.tex'
-texFolder = 'overleaf'
-
-useMultithreading = False
-maxWorkers = 16
-
-debugMode = False
+# check if script is inside source folder -- since we're copying the folder for each
+# commit, we don't want to copy the workDir recursively
+if not texFolder or os.path.abspath(texFolder) in os.path.dirname(os.path.realpath(__file__)):
+    print('Script must be located outside of source folder!')
+    exit()
 
 # worksteps
 should = {
-    'initRepo': True,
-    'compilePdf': True,
-    'pdfToImage': True,
-    'compileImages': True,
-    'renderVideo': True
+    'initRepo': args.skip <= 0,
+    'compilePdf': args.skip <= 1,
+    'pdfToImage': args.skip <= 2,
+    'compileImages': args.skip <= 3,
+    'renderVideo': args.skip <= 4
 }
 
 
 ############################
 # Code
 ############################
-if debugMode:
+if args.testrun:
     stdout = subprocess.PIPE
 else:
     stdout = subprocess.DEVNULL
@@ -98,9 +127,9 @@ def compileImages(commit: git.Commit):
         if (len(images) == 0):
             raise Exception(f'No images found for {commit.hexsha}')
 
-        while (len(images) < maxRows * maxColumns):
+        while (len(images) < args.rows * args.columns):
             images.append(Image.new('RGB', (1275, 1651), color='white'))
-        while ((len(images)) >= maxRows * maxColumns):
+        while ((len(images)) >= args.rows * args.columns):
             images.pop()
 
         for i in range(len(images)):
@@ -109,14 +138,14 @@ def compileImages(commit: git.Commit):
             else:
                 images[i] = images[i].crop((130, 130, 1080, 1380))
 
-        img = pil_grid(images, maxColumns)
+        img = pil_grid(images, args.columns)
         img.save(f'output/commit_{commit.authored_date}.png')
     except Exception as e:
         print(e)
 
 def execute(function, jobs):
     with alive_bar(len(jobs)) as bar:
-        if useMultithreading:
+        if args.useMultithreading:
             pool.map(lambda commit: (
                 function(commit),
                 bar()
@@ -128,9 +157,9 @@ def execute(function, jobs):
                 bar()
 
 
-pool = ThreadPool(maxWorkers)
+pool = ThreadPool(args.workers)
 repo = git.Repo(texFolder)
-if debugMode:
+if args.testrun:
     jobs = list(repo.iter_commits(max_count=10))
 else:
     jobs = list(repo.iter_commits())
@@ -170,7 +199,7 @@ pool.join()
 
 print('Rendering video')
 if should['renderVideo']:
-    cmd = f'ffmpeg -y -framerate 5 -start_number 0 -i %04d.png -c:v libx264 -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2 {outputFile}'
+    cmd = f'ffmpeg -y -framerate 5 -start_number 0 -i %04d.png -c:v libx264 -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2 ../{args.output}'
     process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout, cwd='./output')
     process.wait()
 else:
