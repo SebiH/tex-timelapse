@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
 from multiprocessing.pool import ThreadPool
+import re
 from shutil import rmtree
 import git
 import subprocess
 import os
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageDraw
 from distutils.dir_util import copy_tree, remove_tree
 from glob import glob
 import numpy as np
@@ -29,6 +30,10 @@ parser.add_argument('--rows', type=int,
 parser.add_argument('--columns', type=int,
                     help='Number of columns in final video.', default=6)
 
+parser.add_argument('--highlight-changes', dest='highlightChanges',
+                    type=bool, default=True,
+                    help='Highlight changes based on git commits and synctex (default true)')
+
 parser.add_argument('--use-multithreading', dest='useMultithreading',
                     help='Use multithreading (use with caution - may lead to bugs).',
                     action='store_true')
@@ -48,6 +53,8 @@ args = parser.parse_args()
 # Constants
 ############################
 workDir = './tmp'
+diffFile = '__diff__.txt'
+pagesFile = '__changed_pages__.txt'
 
 texFile = os.path.basename(args.pathToTexFile)
 texFolder = os.path.dirname(args.pathToTexFile)
@@ -71,10 +78,7 @@ should = {
 ############################
 # Code
 ############################
-if args.testrun:
-    stdout = subprocess.PIPE
-else:
-    stdout = subprocess.DEVNULL
+stdout = subprocess.DEVNULL
 
 pdfFile = texFile.replace('.tex', '.pdf')
 
@@ -102,13 +106,68 @@ def initRepo(commit):
     cmd = f'git reset --hard {commit.hexsha}'
     process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout, cwd=workDir)
     process.wait()
+
+    if args.highlightChanges:
+        highlightCmd = f'git diff --unified=0 HEAD HEAD~1 {texFile}'
+        with open(os.path.join(workDir, diffFile), 'w') as f:
+            process = subprocess.Popen(highlightCmd.split(), stdout=f, stderr=stdout, cwd=workDir)
+            process.wait()
+
     rmtree(f'{workDir}/.git')
 
 
 def compilePdf(commit):
-    cmd = f'latexmk -pdf -interaction=nonstopmode {texFile}'
-    process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout, cwd=getWorkDir(commit))
+    cmd = f'latexmk -pdf {"--synctex=1" if args.highlightChanges else ""} -interaction=nonstopmode {texFile}'
+    workDir = getWorkDir(commit)
+    process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout, cwd=workDir)
     process.wait()
+
+    if args.highlightChanges:
+        # find \begin{document} and \end{document} to only highlight changes within document, not preamble etc
+        with open(os.path.join(workDir, texFile), 'r') as f:
+            content = f.readlines()
+            documentSpan = [0, len(content)]
+            i = 0
+            for line in content:
+                i += 1
+                if '\\begin{document}' in line:
+                    documentSpan[0] = i
+                if '\\end{document}' in line:
+                    documentSpan[1] = i
+
+        # transform changed lines into pages using synctex
+        with open(os.path.join(workDir, diffFile), 'r') as f:
+            content = f.read()
+            changedLines = [int(match.group(1)) for match in re.finditer(r'@@\s+-\d+,?\d*\s+\+(\d+),?\d*\s+@@', content)]
+            changedLines = [line for line in changedLines if documentSpan[0] < line and line < documentSpan[1]]
+
+        changedPages = set()
+        for line in changedLines:
+            synctexCmd = f'synctex view -i {line}:0:{os.path.abspath(workDir)}/./{texFile} -o {pdfFile}'
+            process = subprocess.Popen(synctexCmd.split(), stdout=subprocess.PIPE, stderr=stdout, cwd=workDir)
+            out, err = process.communicate()
+            out = str(out)
+
+            try:
+                page = int(re.search(r"Page:(\d*)", out, flags=re.MULTILINE).group(1))
+                changedPages.add(page)
+            except:
+                print(workDir)
+                print(synctexCmd)
+                pass
+
+            # TODO: interpret this output correctly other than the page?
+            # x = float(re.search(r"x:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
+            # y = float(re.search(r"y:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
+            # h = float(re.search(r"h:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
+            # v = float(re.search(r"v:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
+            # W = float(re.search(r"W:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
+            # H = float(re.search(r"H:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
+
+        # write pages back to file for later processing
+        with open(os.path.join(workDir, pagesFile), 'w') as f:
+            for p in changedPages:
+                f.write(str(p) + '\n')
 
 
 def pdfToImage(commit):
@@ -131,6 +190,16 @@ def compileImages(commit: git.Commit):
             images.append(Image.new('RGB', (1275, 1651), color='white'))
         while ((len(images)) >= args.rows * args.columns):
             images.pop()
+
+        if args.highlightChanges:
+            overlay = Image.new('RGBA', images[0].size, '#A3BE8C66')
+            with open(os.path.join(workDir, pagesFile), 'r') as f:
+                for line in f.readlines():
+                    if line and int(line) <= len(images):
+                        line = int(line)
+                        img = images[line-1].convert('RGBA')
+                        img = Image.alpha_composite(img, overlay)
+                        images[line-1] = img
 
         for i in range(len(images)):
             if i % 2 != 0:
