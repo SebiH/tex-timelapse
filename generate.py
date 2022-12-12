@@ -142,7 +142,22 @@ def compilePdf(commit):
             # transform changed lines into pages using synctex
             with open(os.path.join(workDir, diffFile), 'r') as f:
                 content = f.read()
-                changedLines = [int(match.group(1)) for match in re.finditer(r'@@\s+-\d+,?\d*\s+\+(\d+),?\d*\s+@@', content)]
+                changedLines = set()
+
+                # git format example: @@ -33,5 55,4 @@
+                #                         ^  ^ ^  ^
+                #                         |  | |  |
+                #              Removed Line  | Added line
+                #                            |    |
+                #                      Number of removed / added lines (may be optional)
+                #
+                # The following code extracts these values and puts both removed and added lines into the changedLines array
+                for match in re.finditer(r'@@\s+-(\d+),?(\d*)\s+\+(\d+),?(\d*)\s+@@', content):
+                    for x in range(int(match.group(1)), int(match.group(1)) + int(match.group(2) if match.group(2) else 0) + 1):
+                        changedLines.add(x)
+                    for x in range(int(match.group(3)), int(match.group(3)) + int(match.group(4) if match.group(4) else 0) + 1):
+                        changedLines.add(x)
+
                 changedLines = [line for line in changedLines if documentSpan[0] < line and line < documentSpan[1]]
 
             changedPages = set()
