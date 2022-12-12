@@ -123,51 +123,56 @@ def compilePdf(commit):
     process.wait()
 
     if args.highlightChanges:
-        # find \begin{document} and \end{document} to only highlight changes within document, not preamble etc
-        with open(os.path.join(workDir, texFile), 'r') as f:
-            content = f.readlines()
-            documentSpan = [0, len(content)]
-            i = 0
-            for line in content:
-                i += 1
-                if '\\begin{document}' in line:
-                    documentSpan[0] = i
-                if '\\end{document}' in line:
-                    documentSpan[1] = i
+        try:
+            # find \begin{document} and \end{document} to only highlight changes within document, not preamble etc
+            with open(os.path.join(workDir, texFile), 'r') as f:
+                content = f.readlines()
+                documentSpan = [0, len(content)]
+                i = 0
+                for line in content:
+                    i += 1
+                    if '\\begin{document}' in line:
+                        documentSpan[0] = i
+                    if '\\end{document}' in line:
+                        documentSpan[1] = i
 
-        # transform changed lines into pages using synctex
-        with open(os.path.join(workDir, diffFile), 'r') as f:
-            content = f.read()
-            changedLines = [int(match.group(1)) for match in re.finditer(r'@@\s+-\d+,?\d*\s+\+(\d+),?\d*\s+@@', content)]
-            changedLines = [line for line in changedLines if documentSpan[0] < line and line < documentSpan[1]]
+            # transform changed lines into pages using synctex
+            with open(os.path.join(workDir, diffFile), 'r') as f:
+                content = f.read()
+                changedLines = [int(match.group(1)) for match in re.finditer(r'@@\s+-\d+,?\d*\s+\+(\d+),?\d*\s+@@', content)]
+                changedLines = [line for line in changedLines if documentSpan[0] < line and line < documentSpan[1]]
 
-        changedPages = set()
-        for line in changedLines:
-            synctexCmd = f'synctex view -i {line}:0:{os.path.abspath(workDir)}/./{texFile} -o {pdfFile}'
-            process = subprocess.Popen(synctexCmd.split(), stdout=subprocess.PIPE, stderr=stdout, cwd=workDir)
-            out, err = process.communicate()
-            out = str(out)
+            changedPages = set()
+            for line in changedLines:
+                synctexCmd = f'synctex view -i {line}:0:{os.path.abspath(workDir)}/./{texFile} -o {pdfFile}'
+                process = subprocess.Popen(synctexCmd.split(), stdout=subprocess.PIPE, stderr=stdout, cwd=workDir)
+                out, err = process.communicate()
+                out = str(out)
 
-            try:
-                page = int(re.search(r"Page:(\d*)", out, flags=re.MULTILINE).group(1))
-                changedPages.add(page)
-            except:
-                print(workDir)
-                print(synctexCmd)
-                pass
+                try:
+                    page = int(re.search(r"Page:(\d*)", out, flags=re.MULTILINE).group(1))
+                    changedPages.add(page)
+                except:
+                    print(workDir)
+                    print(synctexCmd)
+                    pass
 
-            # TODO: interpret this output correctly other than the page?
-            # x = float(re.search(r"x:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
-            # y = float(re.search(r"y:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
-            # h = float(re.search(r"h:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
-            # v = float(re.search(r"v:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
-            # W = float(re.search(r"W:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
-            # H = float(re.search(r"H:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
+                # TODO: interpret this output correctly other than the page?
+                # x = float(re.search(r"x:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
+                # y = float(re.search(r"y:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
+                # h = float(re.search(r"h:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
+                # v = float(re.search(r"v:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
+                # W = float(re.search(r"W:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
+                # H = float(re.search(r"H:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
 
-        # write pages back to file for later processing
-        with open(os.path.join(workDir, pagesFile), 'w') as f:
-            for p in changedPages:
-                f.write(str(p) + '\n')
+            # write pages back to file for later processing
+            with open(os.path.join(workDir, pagesFile), 'w') as f:
+                for p in changedPages:
+                    f.write(str(p) + '\n')
+        except:
+            print('Error')
+            print(workDir)
+            pass
 
 
 def pdfToImage(commit):
@@ -268,7 +273,7 @@ pool.join()
 
 print('Rendering video')
 if should['renderVideo']:
-    cmd = f'ffmpeg -y -framerate 5 -start_number 0 -i %04d.png -c:v libx264 -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2 ../{args.output}'
+    cmd = f'ffmpeg -y -framerate 5 -start_number 0 -i %04d.png -c:v libx264 -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2:0:0:white ../{args.output}'
     process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout, cwd='./output')
     process.wait()
 else:
