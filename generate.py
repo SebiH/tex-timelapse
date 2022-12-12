@@ -24,6 +24,9 @@ parser.add_argument('pathToTexFile', type=str,
 parser.add_argument('--output', type=str,
                     help='Output video filename.', default='output.mp4')
 
+parser.add_argument('--blur', type=float,
+                    help='Amount of gaussian blur.', default=1)
+
 parser.add_argument('--rows', type=int,
                     help='Number of rows in final video.', default=3)
 
@@ -187,7 +190,7 @@ def pdfToImage(commit):
 def compileImages(commit: git.Commit):
     try:
         workDir = getWorkDir(commit)
-        images = [Image.open(x).filter(ImageFilter.BLUR) for x in glob(f'{workDir}/__visualizer__*.png')]
+        images = [Image.open(x).filter(ImageFilter.GaussianBlur(args.blur)) for x in glob(f'{workDir}/__visualizer__*.png')]
         if (len(images) == 0):
             raise Exception(f'No images found for {commit.hexsha}')
 
