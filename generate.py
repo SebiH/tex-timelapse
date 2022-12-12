@@ -36,6 +36,10 @@ parser.add_argument('--columns', type=int,
 parser.add_argument('--highlight-changes', dest='highlightChanges',
                     type=bool, default=True,
                     help='Highlight changes based on git commits and synctex (default true)')
+parser.add_argument('--fade-effect', dest='fadeEffect',
+                    type=bool, default=False,
+                    help='Slowly fades out the changes from previous commits (requires --highlight-changes)')
+
 
 parser.add_argument('--use-multithreading', dest='useMultithreading',
                     help='Use multithreading (use with caution - may lead to bugs).',
@@ -202,6 +206,10 @@ def pdfToImage(commit):
     except Exception as e:
         print(e)
 
+
+# TODO: breaks in multithreading mode!
+changedPageTracker = {}
+
 def compileImages(commit: git.Commit):
     try:
         workDir = getWorkDir(commit)
@@ -215,14 +223,37 @@ def compileImages(commit: git.Commit):
             images.pop()
 
         if args.highlightChanges:
-            overlay = Image.new('RGBA', images[0].size, '#A3BE8C66')
-            with open(os.path.join(workDir, pagesFile), 'r') as f:
-                for line in f.readlines():
-                    if line and int(line) <= len(images):
+            if not args.fadeEffect:
+                overlay = Image.new('RGBA', images[0].size, '#A3BE8C66')
+                with open(os.path.join(workDir, pagesFile), 'r') as f:
+                    for line in f.readlines():
+                        if line and int(line) <= len(images):
+                            line = int(line)
+                            img = images[line-1].convert('RGBA')
+                            img = Image.alpha_composite(img, overlay)
+                            images[line-1] = img
+
+            if args.fadeEffect:
+                with open(os.path.join(workDir, pagesFile), 'r') as f:
+                    # fade effect
+                    for key in list(changedPageTracker):
+                        changedPageTracker[key] *= 0.3
+                        changedPageTracker[key] -= 0.1
+                        if changedPageTracker[key] < 0:
+                            changedPageTracker.pop(key)
+
+                    for line in f.readlines():
+                        if line:
+                            changedPageTracker[line] = 1
+                    
+
+                    for line in changedPageTracker:
+                        overlay = Image.new('RGBA', images[0].size, f'#A3BE8C{int(changedPageTracker[line]*102):0>2X}')
                         line = int(line)
                         img = images[line-1].convert('RGBA')
                         img = Image.alpha_composite(img, overlay)
                         images[line-1] = img
+
 
         for i in range(len(images)):
             if i % 2 != 0:
