@@ -1,0 +1,4 @@
+pillow
+alive_progress
+gitpython
+numpy
