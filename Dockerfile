@@ -9,12 +9,14 @@ RUN apt-get install -y \
     # for pdftopng
     poppler-utils \
     # latex
-    texlive
+    texlive-full \
+    latexmk 
 
 # Set up python
-COPY generate.py .
 COPY requirements.txt .
 RUN pip install -r requirements.txt
+
+COPY generate.py .
 
 # Finish image
 ENTRYPOINT [ "python", "generate.py" ]
