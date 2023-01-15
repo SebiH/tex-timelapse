@@ -1,13 +1,14 @@
 # tex-history-visualizer
 
-Visualizes the (git) history of a LaTeX project as a video. Requires 
+Visualizes the (git) history of a LaTeX project as a video. Requires the full history of a latex project (see also "Not supported (yet)" section).
 
-![](/example.webm?raw=true)
+[example.webm](https://user-images.githubusercontent.com/2853456/212557287-f717ed4b-2a64-4d33-afd4-96a2513947f1.webm)
+
 
 ## Usage
 ### Docker (Linux/MacOS):
 ```bash
-docker run -it -v ${CWD}/YOUR_SOURCE:/visualizer/source -v ${PWD}/tmp:/visualizer/tmp -v ${PWD}/output:/visualizer/output tex-history-visualizer source/YOUR_MAIN.tex
+docker run -it -v ${CWD}/YOUR_SOURCE:/visualizer/source -v ${CWD}/tmp:/visualizer/tmp -v ${CWD}/output:/visualizer/output tex-history-visualizer source/YOUR_MAIN.tex
 ```
 
 ### Docker (Windows):
