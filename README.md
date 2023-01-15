@@ -8,13 +8,13 @@ Visualizes the (git) history of a LaTeX project as a video. Requires the full hi
 ## Usage
 ### Docker (Linux/MacOS):
 ```bash
-docker run -it -v ${CWD}/YOUR_SOURCE:/visualizer/source -v ${CWD}/tmp:/visualizer/tmp -v ${CWD}/output:/visualizer/output tex-history-visualizer source/YOUR_MAIN.tex
+docker run -it -v ${CWD}/YOUR_SOURCE:/visualizer/source -v ${CWD}/tmp:/visualizer/tmp -v ${CWD}/output:/visualizer/output sebih/tex-history-visualizer source/YOUR_MAIN.tex
 ```
 
 ### Docker (Windows):
 *Note: you may want to copy the files to WSL anyway and use the Linux command due to performance issues when reading/writing files from outside of WSL*
 ```bash
-docker run -it -v ${PWD}/YOUR_SOURCE:/visualizer/source -v ${PWD}/tmp:/visualizer/tmp -v ${PWD}/output:/visualizer/output tex-history-visualizer source/YOUR_MAIN.tex
+docker run -it -v ${PWD}/YOUR_SOURCE:/visualizer/source -v ${PWD}/tmp:/visualizer/tmp -v ${PWD}/output:/visualizer/output sebih/tex-history-visualizer source/YOUR_MAIN.tex
 ```
 
 ### Raw (Python)
