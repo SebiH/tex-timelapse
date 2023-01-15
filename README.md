@@ -1,4 +1,4 @@
-# tex-history-visualizer
+# TeX History Visualizer
 
 Visualizes the (git) history of a LaTeX project as a video. Requires the full history of a latex project (see also "Not supported (yet)" section).
 
