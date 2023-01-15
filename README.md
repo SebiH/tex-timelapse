@@ -2,7 +2,7 @@
 
 Visualizes the (git) history of a LaTeX project as a video. Requires 
 
-![](/example.mp4?raw=true)
+![](/example.webm?raw=true)
 
 ## Usage
 ### Docker (Linux/MacOS):
