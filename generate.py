@@ -322,7 +322,7 @@ pool.join()
 
 print('Rendering video')
 if should['renderVideo']:
-    cmd = f'ffmpeg -y -framerate 5 -start_number 0 -i %04d.png -c:v libx264 -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2:0:0:white {args.output}'
+    cmd = f'ffmpeg -y -framerate 5 -start_number 0 -i %04d.png -c:v libaom-av1 -movflags +faststart -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2:0:0:white -strict -2 {args.output}'
     process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout, cwd='./output')
     process.wait()
 else:
