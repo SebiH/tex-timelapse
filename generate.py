@@ -213,6 +213,7 @@ changedPageTracker = {}
 def compileImages(commit: git.Commit):
     try:
         workDir = getWorkDir(commit)
+
         images = [Image.open(x).filter(ImageFilter.GaussianBlur(args.blur)) for x in glob(f'{workDir}/__visualizer__*.png')]
         if (len(images) == 0):
             raise Exception(f'No images found for {commit.hexsha}')
@@ -221,6 +222,27 @@ def compileImages(commit: git.Commit):
             images.append(Image.new('RGB', (1275, 1651), color='white'))
         while ((len(images)) >= args.rows * args.columns):
             images.pop()
+
+
+        for i in range(len(images)):
+            if i % 2 != 0:
+                images[i] = images[i].crop((200, 130, 1150, 1380))
+            else:
+                images[i] = images[i].crop((130, 130, 1080, 1380))
+
+        fadeRepetitions = 1
+        if args.fadeEffect:
+            fadeRepetitions = 5
+            with open(os.path.join(workDir, pagesFile), 'r') as f:
+                for line in f.readlines():
+                    if line:
+                        changedPageTracker[line] = 1
+                        
+        for fadeRepetition in range(fadeRepetitions):
+            # clone images to apply fade effect without stacking overlays
+            hlImages = []
+            for i in images:
+                hlImages.append(i)
 
         if args.highlightChanges:
             if not args.fadeEffect:
@@ -231,38 +253,25 @@ def compileImages(commit: git.Commit):
                             line = int(line)
                             img = images[line-1].convert('RGBA')
                             img = Image.alpha_composite(img, overlay)
-                            images[line-1] = img
+                                hlImages[line-1] = img
 
             if args.fadeEffect:
                 with open(os.path.join(workDir, pagesFile), 'r') as f:
                     # fade effect
                     for key in list(changedPageTracker):
-                        changedPageTracker[key] *= 0.3
-                        changedPageTracker[key] -= 0.1
-                        if changedPageTracker[key] < 0:
+                            changedPageTracker[key] -= 0.05
+                            if changedPageTracker[key] < 0.01:
                             changedPageTracker.pop(key)
-
-                    for line in f.readlines():
-                        if line:
-                            changedPageTracker[line] = 1
-                    
 
                     for line in changedPageTracker:
                         overlay = Image.new('RGBA', images[0].size, f'#A3BE8C{int(changedPageTracker[line]*102):0>2X}')
                         line = int(line)
                         img = images[line-1].convert('RGBA')
                         img = Image.alpha_composite(img, overlay)
-                        images[line-1] = img
+                            hlImages[line-1] = img
 
-
-        for i in range(len(images)):
-            if i % 2 != 0:
-                images[i] = images[i].crop((200, 130, 1150, 1380))
-            else:
-                images[i] = images[i].crop((130, 130, 1080, 1380))
-
-        img = pil_grid(images, args.columns)
-        img.save(f'output/commit_{commit.authored_date}.png')
+            img = pil_grid(hlImages, args.columns)
+            img.save(f'output/commit_{commit.authored_date}_{fadeRepetition:02}.png')
     except Exception as e:
         print(e)
 
@@ -274,7 +283,7 @@ def execute(function, jobs):
                 bar()
             ), jobs)
         else:
-            for job in jobs:
+            for job in reversed(jobs):
                 bar.text = job.hexsha
                 function(job)
                 bar()
@@ -310,7 +319,7 @@ if should['compileImages']:
     execute(compileImages, jobs)
     i = 0
     for file in sorted(glob('output/commit_*.png')):
-        os.replace(file, os.path.join('output', f'{i:04d}.png'))
+        os.replace(file, os.path.join('output', f'{i:05d}.png'))
         i += 1
 
 else:
@@ -322,7 +331,10 @@ pool.join()
 
 print('Rendering video')
 if should['renderVideo']:
-    cmd = f'ffmpeg -y -framerate 5 -start_number 0 -i %04d.png -c:v libaom-av1 -movflags +faststart -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2:0:0:white -strict -2 {args.output}'
+    framerate = 5
+    if args.fadeEffect:
+        framerate *= 5
+    cmd = f'ffmpeg -y -framerate {framerate} -start_number 0 -i %05d.png -c:v libaom-av1 -movflags +faststart -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2:0:0:white -strict -2 {args.output}'
     process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout, cwd='./output')
     process.wait()
 else:

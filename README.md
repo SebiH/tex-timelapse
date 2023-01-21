@@ -28,11 +28,11 @@ docker run -it -v ${PWD}/YOUR_SOURCE:/visualizer/source -v ${PWD}/tmp:/visualize
   - `--rows <ROWS: number>`: Number of rows in final video (default: 3).
   - `--columns <COLUMNS: number>`: Number of columns in final video (default: 6).
   - `--highlight-changes <HIGHLIGHTCHANGES: true|false>` Highlight changes based on git commits and synctex (default true).
-  - ~~`--fade-effect <FADEEFFECT: true|false>`: Slowly fades out the changes from previous commits (requires --highlight-changes, default: false)~~ Not yet ready.
+  - `--fade-effect <FADEEFFECT: true|false>`: Slowly fades out the changes from previous commits (requires --highlight-changes, default: false)
   - ~~`--use-multithreading`: Use multithreading (use with caution - may lead to bugs).~~ Does not work (yet)
   - ~~`--workers <WORKERS: number>`: Number of worker threads (requires multithreading).~~ Does not work (yet)
   - `--test-run`: Performs a quick test run with 10 commits and prints output to console. Useful for debugging.
-  - `--skip-step <SKIP: number>`: Skips specified worksteps. Useful for faster re-rendering.
+  - `--skip-step <SKIP: number>`: Skips specified worksteps. Useful for faster re-rendering (e.g. by skipping directly to rendering step).
     - 1: Initialize repositories in `tmp/` folder
     - 2: Compile PDF and write changes from git/synctex to file
     - 3: Convert PDF pages to images
@@ -43,4 +43,4 @@ docker run -it -v ${PWD}/YOUR_SOURCE:/visualizer/source -v ${PWD}/tmp:/visualize
 - Multithreading
 - Splitting source files into multiple tex files
 - Exporting history from Overleaf as individual git commits
-- Visualize datetime (e.g., timeslider)
+- Visualize datetime (e.g., timeslider, git tags)
