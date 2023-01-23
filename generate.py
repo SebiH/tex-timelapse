@@ -12,6 +12,7 @@ from glob import glob
 import numpy as np
 from alive_progress import alive_bar
 import argparse
+from ffmpeg_progress_yield import FfmpegProgress
 
 
 ############################
@@ -200,7 +201,7 @@ def compilePdf(commit):
 def pdfToImage(commit):
     try:
         workDir = getWorkDir(commit)
-        cmd = f'pdftoppm -png {workDir}/{pdfFile} {workDir}/__visualizer__'
+        cmd = f'pdftopng {workDir}/{pdfFile} {workDir}/__visualizer__'
         process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout)
         process.wait()
     except Exception as e:
@@ -244,30 +245,30 @@ def compileImages(commit: git.Commit):
             for i in images:
                 hlImages.append(i)
 
-        if args.highlightChanges:
-            if not args.fadeEffect:
-                overlay = Image.new('RGBA', images[0].size, '#A3BE8C66')
-                with open(os.path.join(workDir, pagesFile), 'r') as f:
-                    for line in f.readlines():
-                        if line and int(line) <= len(images):
+            if args.highlightChanges:
+                if not args.fadeEffect:
+                    overlay = Image.new('RGBA', images[0].size, '#A3BE8C66')
+                    with open(os.path.join(workDir, pagesFile), 'r') as f:
+                        for line in f.readlines():
+                            if line and int(line) <= len(images):
+                                line = int(line)
+                                img = images[line-1].convert('RGBA')
+                                img = Image.alpha_composite(img, overlay)
+                                hlImages[line-1] = img
+
+                if args.fadeEffect:
+                    with open(os.path.join(workDir, pagesFile), 'r') as f:
+                        # fade effect
+                        for key in list(changedPageTracker):
+                            changedPageTracker[key] -= 0.05
+                            if changedPageTracker[key] < 0.01:
+                                changedPageTracker.pop(key)
+
+                        for line in changedPageTracker:
+                            overlay = Image.new('RGBA', images[0].size, f'#A3BE8C{int(changedPageTracker[line]*102):0>2X}')
                             line = int(line)
                             img = images[line-1].convert('RGBA')
                             img = Image.alpha_composite(img, overlay)
-                                hlImages[line-1] = img
-
-            if args.fadeEffect:
-                with open(os.path.join(workDir, pagesFile), 'r') as f:
-                    # fade effect
-                    for key in list(changedPageTracker):
-                            changedPageTracker[key] -= 0.05
-                            if changedPageTracker[key] < 0.01:
-                            changedPageTracker.pop(key)
-
-                    for line in changedPageTracker:
-                        overlay = Image.new('RGBA', images[0].size, f'#A3BE8C{int(changedPageTracker[line]*102):0>2X}')
-                        line = int(line)
-                        img = images[line-1].convert('RGBA')
-                        img = Image.alpha_composite(img, overlay)
                             hlImages[line-1] = img
 
             img = pil_grid(hlImages, args.columns)
@@ -334,8 +335,10 @@ if should['renderVideo']:
     framerate = 5
     if args.fadeEffect:
         framerate *= 5
-    cmd = f'ffmpeg -y -framerate {framerate} -start_number 0 -i %05d.png -c:v libx264 -movflags +faststart -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2:0:0:white -strict -2 {args.output}'
-    process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout, cwd='./output')
-    process.wait()
+    cmd = f'ffmpeg -y -framerate {framerate} -start_number 0 -i output/%05d.png -c:v libx264 -movflags +faststart -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2:0:0:white -strict -2 output/{args.output}'
+    ff = FfmpegProgress(cmd.split(' '))
+    with alive_bar(total=100) as bar:
+        for progress in ff.run_command_with_progress():
+            bar(progress - bar.current())
 else:
     print('Skipping')
