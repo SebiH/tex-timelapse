@@ -201,7 +201,7 @@ def compilePdf(commit):
 def pdfToImage(commit):
     try:
         workDir = getWorkDir(commit)
-        cmd = f'pdftopng {workDir}/{pdfFile} {workDir}/__visualizer__'
+        cmd = f'pdftoppm -png {workDir}/{pdfFile} {workDir}/__visualizer__'
         process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout)
         process.wait()
     except Exception as e:
