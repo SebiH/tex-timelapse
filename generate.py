@@ -18,7 +18,7 @@ from ffmpeg_progress_yield import FfmpegProgress
 ############################
 # Argument parsing
 ############################
-parser = argparse.ArgumentParser(description='Visualize the creation of a LaTeX document.')
+parser = argparse.ArgumentParser(description='Visualize the creation of a LaTeX document as timelapse.')
 parser.add_argument('pathToTexFile', type=str,
                     help='Path to main tex file (should include .git folder!)', default='source/main.tex')
 

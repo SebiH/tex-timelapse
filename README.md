@@ -1,6 +1,6 @@
-# TeX History Visualizer
+# TeX Timelapse
 
-Visualizes the (git) history of a LaTeX project as a video. Requires the full history of a latex project (see also "Not supported (yet)" section).
+Visualizes the (git) history of a LaTeX project as a timelapse video. Requires the full history of a latex project (see also "Not supported (yet)" section).
 
 [example.webm](https://user-images.githubusercontent.com/2853456/212557287-f717ed4b-2a64-4d33-afd4-96a2513947f1.webm)
 
