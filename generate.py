@@ -235,11 +235,12 @@ def assembleImage(commit: git.Commit):
             images.pop()
 
 
-        for i in range(len(images)):
-            if i % 2 != 0:
-                images[i] = images[i].crop((200, 130, 1150, 1380))
-            else:
-                images[i] = images[i].crop((130, 130, 1080, 1380))
+        # Image crop - only works for ACM single column template
+        # for i in range(len(images)):
+        #     if i % 2 != 0:
+        #         images[i] = images[i].crop((200, 130, 1150, 1380))
+        #     else:
+        #         images[i] = images[i].crop((130, 130, 1080, 1380))
 
         fadeRepetitions = 1
         if args.fadeEffect:
