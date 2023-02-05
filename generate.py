@@ -340,8 +340,8 @@ if should['renderVideo']:
         framerate *= 5
     cmd = f'ffmpeg -y -framerate {framerate} -start_number 0 -i output/%05d.png -c:v libx264 -movflags +faststart -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2:0:0:white -strict -2 output/{args.output}'
     ff = FfmpegProgress(cmd.split(' '))
-    with alive_bar(total=100) as bar:
+    with alive_bar(manual=True) as bar:
         for progress in ff.run_command_with_progress():
-            bar(progress - bar.current())
+            bar(progress / 100)
 else:
     print('Skipping')
