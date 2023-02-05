@@ -176,8 +176,6 @@ def compilePdf(commit):
                     page = int(re.search(r"Page:(\d*)", out, flags=re.MULTILINE).group(1))
                     changedPages.add(page)
                 except:
-                    print(workDir)
-                    print(synctexCmd)
                     pass
 
                 # TODO: interpret this output correctly other than the page?
