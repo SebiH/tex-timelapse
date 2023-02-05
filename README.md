@@ -14,16 +14,18 @@ docker run -it -v ${CWD}/YOUR_SOURCE:/visualizer/source -v ${CWD}/tmp:/visualize
 ### docker
 *Note: On windows, you may want to copy the files to a 'native' WSL and due to performance bottlenecks when reading/writing files from outside of WSL*
 ```bash
-docker run -it -v ${PWD}/YOUR_SOURCE:/visualizer/source -v ${PWD}/tmp:/visualizer/tmp -v ${PWD}/output:/visualizer/output sebih/tex-history-visualizer source/YOUR_MAIN.tex
+docker run -it --rm -v ${PWD}/YOUR_SOURCE:/visualizer/source -v ${PWD}/tmp:/visualizer/tmp -v ${PWD}/output:/visualizer/output sebih/tex-timelapse source/YOUR_MAIN.tex
 ```
 
 ### python
 - Install OS dependencies:
-  - LaTeX (+ necessary packages, depending on your tex file)
+  - LaTeX
+  - texliveonfly - either via package manager (e.g., `apt install texlive-extra-utils`) or texlive manager (`tlmgr install texliveonfly`)
   - latexmk
   - git
   - pdftoppm (e.g., from `poppler-utils`)
   - ffmpeg
+  - python3
 - Install python dependencies: `pip install -r requirements.txt`
 - Run: `python generate.py PATH/TO/MAIN.tex`
 
@@ -48,6 +50,6 @@ docker run -it -v ${PWD}/YOUR_SOURCE:/visualizer/source -v ${PWD}/tmp:/visualize
 
 ## Not supported (yet)
 - Multithreading
-- Splitting source files into multiple tex files
+- Tracking changes across multiple tex files (e.g., using `\input`)
 - Exporting history from Overleaf as individual git commits
 - Visualize datetime (e.g., timeslider, git tags)

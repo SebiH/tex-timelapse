@@ -305,6 +305,11 @@ else:
 
 print('Compiling PDF')
 if should['compilePdf']:
+    # Install tex dependencies
+    cmd = f'texliveonfly {args.pathToTexFile}'
+    process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout, cwd=texFolder)
+    process.wait()
+
     execute(compilePdf, jobs)
 else:
     print('Skipping')
