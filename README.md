@@ -11,15 +11,22 @@ Visualizes the (git) history of a LaTeX project as a timelapse video. Requires t
 docker run -it -v ${CWD}/YOUR_SOURCE:/visualizer/source -v ${CWD}/tmp:/visualizer/tmp -v ${CWD}/output:/visualizer/output sebih/tex-history-visualizer source/YOUR_MAIN.tex
 ```
 
-### Docker (Windows):
-*Note: you may want to copy the files to WSL anyway and use the Linux command due to performance issues when reading/writing files from outside of WSL*
+### docker
+*Note: On windows, you may want to copy the files to a 'native' WSL and due to performance bottlenecks when reading/writing files from outside of WSL*
 ```bash
 docker run -it -v ${PWD}/YOUR_SOURCE:/visualizer/source -v ${PWD}/tmp:/visualizer/tmp -v ${PWD}/output:/visualizer/output sebih/tex-history-visualizer source/YOUR_MAIN.tex
 ```
 
-### Raw (Python)
-- Install: `pip install -r requirements.txt`
-- Run: `py generate.py PATH/TO/MAIN.tex`
+### python
+- Install OS dependencies:
+  - LaTeX (+ necessary packages, depending on your tex file)
+  - latexmk
+  - git
+  - pdftoppm (e.g., from `poppler-utils`)
+  - ffmpeg
+- Install python dependencies: `pip install -r requirements.txt`
+- Run: `python generate.py PATH/TO/MAIN.tex`
+
 
 ## Parameters
   - `-h, --help`: show help message and exit
