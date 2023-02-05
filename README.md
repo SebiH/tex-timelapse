@@ -6,9 +6,10 @@ Visualizes the (git) history of a LaTeX project as a timelapse video. Requires t
 
 
 ## Usage
-### Docker (Linux/MacOS):
+### docker-compose
+*Note: Edit the docker-compose.yml first to change source path*
 ```bash
-docker run -it -v ${CWD}/YOUR_SOURCE:/visualizer/source -v ${CWD}/tmp:/visualizer/tmp -v ${CWD}/output:/visualizer/output sebih/tex-history-visualizer source/YOUR_MAIN.tex
+docker-compose run --rm tex-timelapse source/YOUR_MAIN_TEX_FILE.tex <arguments>
 ```
 
 ### docker

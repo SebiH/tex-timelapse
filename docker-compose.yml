@@ -1,0 +1,10 @@
+version: '3'
+services:
+  tex-timelapse:
+      image: sebih/tex-timelapse:latest
+      stdin_open: true
+      tty: true
+      volumes:
+          - ./EDIT_YOUR_SOURCE_FOLDER:/visualizer/source
+          - ./output:/visualizer/output
+          - ./tmp:/visualizer/tmp # not necessary - but makes re-rendering much faster
