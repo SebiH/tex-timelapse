@@ -45,7 +45,7 @@ docker run -it --rm -v ${PWD}/YOUR_SOURCE:/visualizer/source -v ${PWD}/tmp:/visu
     - 1: Initialize repositories in `tmp/` folder
     - 2: Compile PDF and write changes from git/synctex to file
     - 3: Convert PDF pages to images
-    - 4: Compile images into one big file; add change highlight
+    - 4: Assemble images into one big file; add change highlight
     - 5: Render video
 
 ## Not supported (yet)

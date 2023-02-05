@@ -64,21 +64,33 @@ workDir = './tmp'
 diffFile = '__diff__.txt'
 pagesFile = '__changed_pages__.txt'
 
+imgDir = os.path.join(workDir, 'img')
+try:
+    os.makedirs(imgDir)
+except FileExistsError:
+   pass
+
+try:
+    os.makedirs('./output')
+except FileExistsError:
+   pass
+
 texFile = os.path.basename(args.pathToTexFile)
 texFolder = os.path.dirname(args.pathToTexFile)
+
 
 # check if script is inside source folder -- since we're copying the folder for each
 # commit, we don't want to copy the workDir recursively
 if not texFolder or os.path.abspath(texFolder) in os.path.dirname(os.path.realpath(__file__)):
     print('Script must be located outside of source folder!')
     exit()
-
+ 
 # worksteps
 should = {
     'initRepo': args.skip <= 0,
     'compilePdf': args.skip <= 1,
     'pdfToImage': args.skip <= 2,
-    'compileImages': args.skip <= 3,
+    'assembleImage': args.skip <= 3,
     'renderVideo': args.skip <= 4
 }
 
@@ -209,7 +221,7 @@ def pdfToImage(commit):
 # TODO: breaks in multithreading mode!
 changedPageTracker = {}
 
-def compileImages(commit: git.Commit):
+def assembleImage(commit: git.Commit):
     try:
         workDir = getWorkDir(commit)
 
@@ -270,7 +282,7 @@ def compileImages(commit: git.Commit):
                             hlImages[line-1] = img
 
             img = pil_grid(hlImages, args.columns)
-            img.save(f'output/commit_{commit.authored_date}_{fadeRepetition:02}.png')
+            img.save(f'{imgDir}/commit_{commit.authored_date}_{fadeRepetition:02}.png')
     except Exception as e:
         print(e)
 
@@ -301,10 +313,11 @@ if should['initRepo']:
 else:
     print('Skipping')
 
-print('Compiling PDF')
+print('Creating PDF')
 if should['compilePdf']:
-    # Install tex dependencies
+    print('├── Install missing tex dependencies')
     cmd = f'texliveonfly {args.pathToTexFile}'
+    print('└── Compiling')
     process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout, cwd=texFolder)
     process.wait()
 
@@ -318,12 +331,12 @@ if should['pdfToImage']:
 else:
     print('Skipping')
 
-print('Compiling images')
-if should['compileImages']:
-    execute(compileImages, jobs)
+print('Assembling images')
+if should['assembleImage']:
+    execute(assembleImage, jobs)
     i = 0
-    for file in sorted(glob('output/commit_*.png')):
-        os.replace(file, os.path.join('output', f'{i:05d}.png'))
+    for file in sorted(glob(f'{imgDir}/commit_*.png')):
+        os.replace(file, os.path.join(imgDir, f'{i:05d}.png'))
         i += 1
 
 else:
@@ -338,7 +351,7 @@ if should['renderVideo']:
     framerate = 5
     if args.fadeEffect:
         framerate *= 5
-    cmd = f'ffmpeg -y -framerate {framerate} -start_number 0 -i output/%05d.png -c:v libx264 -movflags +faststart -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2:0:0:white -strict -2 output/{args.output}'
+    cmd = f'ffmpeg -y -framerate {framerate} -start_number 0 -i {imgDir}/%05d.png -c:v libx264 -movflags +faststart -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2:0:0:white -strict -2 output/{args.output}'
     ff = FfmpegProgress(cmd.split(' '))
     with alive_bar(manual=True) as bar:
         for progress in ff.run_command_with_progress():
