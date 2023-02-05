@@ -225,7 +225,7 @@ def assembleImage(commit: git.Commit):
     try:
         workDir = getWorkDir(commit)
 
-        images = [Image.open(x).filter(ImageFilter.GaussianBlur(args.blur)) for x in glob(f'{workDir}/__visualizer__*.png')]
+        images = [Image.open(x).filter(ImageFilter.GaussianBlur(args.blur)) for x in sorted(glob(f'{workDir}/__visualizer__*.png'))]
         if (len(images) == 0):
             raise Exception(f'No images found for {commit.hexsha}')
 
