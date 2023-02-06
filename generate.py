@@ -318,10 +318,10 @@ print('Creating PDF')
 if should['compilePdf']:
     print('├── Install missing tex dependencies')
     cmd = f'texliveonfly {args.pathToTexFile}'
-    print('└── Compiling')
-    process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout, cwd=texFolder)
+    process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout)
     process.wait()
 
+    print('└── Compiling')
     execute(compilePdf, jobs)
 else:
     print('Skipping')
