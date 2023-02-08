@@ -137,10 +137,14 @@ def initRepo(commit):
 
 
 def compilePdf(commit):
-    cmd = f'latexmk -pdf {"--synctex=1" if args.highlightChanges else ""} -interaction=nonstopmode {texFile}'
     workDir = getWorkDir(commit)
-    process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout, cwd=workDir)
-    process.wait()
+    installCmd = f'texliveonfly {texFile}'
+    installProcess = subprocess.Popen(installCmd.split(), stdout=stdout, stderr=stdout, cwd=workDir)
+    installProcess.wait()
+
+    cmd = f'latexmk -pdf {"--synctex=1" if args.highlightChanges else ""} -interaction=nonstopmode {texFile}'
+    compileProcess = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout, cwd=workDir)
+    compileProcess.wait()
 
     if args.highlightChanges:
         try:
