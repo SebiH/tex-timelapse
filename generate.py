@@ -320,7 +320,7 @@ else:
 
 print('Creating PDF')
 if should['compilePdf']:
-    print('├── Install missing tex dependencies')
+    print('├── Installing missing tex dependencies')
     cmd = f'texliveonfly {args.pathToTexFile}'
     process = subprocess.Popen(cmd.split(), stdout=stdout, stderr=stdout)
     process.wait()
