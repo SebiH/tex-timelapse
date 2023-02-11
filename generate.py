@@ -294,13 +294,20 @@ def assembleImage(commit: git.Commit):
     except Exception as e:
         print(e)
 
+
+def runJob(function, commit, bar):
+    c = commit
+    try:
+        function(c)
+    except Exception as e:
+        print(f'Error processing commit {c.hexsha}: {e}')
+    bar()
+
+
 def execute(function, jobs):
     with alive_bar(len(jobs)) as bar:
         if args.useMultithreading:
-            pool.map(lambda commit: (
-                function(commit),
-                bar()
-            ), jobs)
+            pool.map(lambda commit: runJob(function, commit, bar), jobs)
         else:
             for job in reversed(jobs):
                 bar.text = job.hexsha
