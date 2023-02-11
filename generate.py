@@ -48,8 +48,10 @@ parser.add_argument('--use-multithreading', dest='useMultithreading',
 parser.add_argument('--workers', type=int,
                     help='Number of worker threads (requires multithreading).', default=16)
 
-parser.add_argument('--test-run', dest='testrun', action='store_true',
-                    help='Performs a quick test run with 10 commits and prints output to console. Useful for debugging.')
+parser.add_argument('--from', dest='start', type=str,
+                    help='Define at which commit the timelapse should start')
+parser.add_argument('--to', dest='end', type=str,
+                    help='Define at which commit the timelapse should stop')
 
 parser.add_argument('--skip-step', dest='skip', type=int, default=0,
                     help='Skips specified worksteps.')
@@ -60,9 +62,12 @@ args = parser.parse_args()
 ############################
 # Constants
 ############################
+stdout = subprocess.DEVNULL
+
 workDir = './tmp'
 diffFile = '__diff__.txt'
 pagesFile = '__changed_pages__.txt'
+
 
 imgDir = os.path.join(workDir, 'img')
 try:
@@ -77,6 +82,7 @@ except FileExistsError:
 
 texFile = os.path.basename(args.pathToTexFile)
 texFolder = os.path.dirname(args.pathToTexFile)
+pdfFile = texFile.replace('.tex', '.pdf')
 
 
 # check if script is inside source folder -- since we're copying the folder for each
@@ -98,9 +104,6 @@ should = {
 ############################
 # Code
 ############################
-stdout = subprocess.DEVNULL
-
-pdfFile = texFile.replace('.tex', '.pdf')
 
 # see https://stackoverflow.com/a/46877433/4090817
 def pil_grid(images, max_horiz=np.iinfo(int).max):
@@ -307,10 +310,16 @@ def execute(function, jobs):
 
 pool = ThreadPool(args.workers)
 repo = git.Repo(texFolder)
-if args.testrun:
-    jobs = list(repo.iter_commits(max_count=10))
-else:
-    jobs = list(repo.iter_commits())
+
+jobs = list(repo.iter_commits())
+
+if args.start:
+    startIndex = list(map(lambda c: c.hexsha == args.start or c.hexsha.startswith(args.start), jobs)).index(True)
+    jobs = jobs[:startIndex]
+
+if args.end:
+    endIndex = list(map(lambda c: c.hexsha == args.end or c.hexsha.startswith(args.end), jobs)).index(True)
+    jobs = jobs[endIndex:]
 
 print('Initializing repositories')
 if should['initRepo']:
