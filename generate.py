@@ -64,12 +64,12 @@ args = parser.parse_args()
 ############################
 stdout = subprocess.DEVNULL
 
-workDir = './tmp'
+tmpDir = './tmp'
 diffFile = '__diff__.txt'
 pagesFile = '__changed_pages__.txt'
 
 
-imgDir = os.path.join(workDir, 'img')
+imgDir = os.path.join(tmpDir, 'img')
 try:
     os.makedirs(imgDir)
 except FileExistsError:
@@ -86,7 +86,7 @@ pdfFile = texFile.replace('.tex', '.pdf')
 
 
 # check if script is inside source folder -- since we're copying the folder for each
-# commit, we don't want to copy the workDir recursively
+# commit, we don't want to copy the tmpDir recursively
 if not texFolder or os.path.abspath(texFolder) in os.path.dirname(os.path.realpath(__file__)):
     print('Script must be located outside of source folder!')
     exit()
@@ -121,7 +121,7 @@ def pil_grid(images, max_horiz=np.iinfo(int).max):
     return im_grid
 
 def getWorkDir(commit):
-    return os.path.join(workDir, commit.hexsha)
+    return os.path.join(tmpDir, commit.hexsha)
 
 def initRepo(commit):
     workDir = getWorkDir(commit)
@@ -318,14 +318,26 @@ def execute(function, jobs):
 pool = ThreadPool(args.workers)
 repo = git.Repo(texFolder)
 
-jobs = list(repo.iter_commits())
+class dotdict(dict):
+    """dot.notation access to dictionary attributes"""
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
+# make list threadsafe - otherwise we'll run into weird bugs
+jobs = [];
+for job in list(repo.iter_commits()):
+    jobs.append(dotdict({
+        'hexsha': job.hexsha,
+        'authored_date': job.authored_date
+    }));
 
 if args.start:
-    startIndex = list(map(lambda c: c.hexsha == args.start or c.hexsha.startswith(args.start), jobs)).index(True)
+    startIndex = list(map(lambda c: c.hexsha.startswith(args.start), jobs)).index(True)
     jobs = jobs[:startIndex]
 
 if args.end:
-    endIndex = list(map(lambda c: c.hexsha == args.end or c.hexsha.startswith(args.end), jobs)).index(True)
+    endIndex = list(map(lambda c: c.hexsha.startswith(args.end), jobs)).index(True)
     jobs = jobs[endIndex:]
 
 print('Initializing repositories')

@@ -39,8 +39,8 @@ docker run -it --rm -v ${PWD}/YOUR_SOURCE:/visualizer/source -v ${PWD}/tmp:/visu
   - `--columns <COLUMNS: number>`: Number of columns in final video (default: 6).
   - `--highlight-changes <HIGHLIGHTCHANGES: true|false>` Highlight changes based on git commits and synctex (default true).
   - `--fade-effect <FADEEFFECT: true|false>`: Slowly fades out the changes from previous commits (requires --highlight-changes, default: false)
-  - ~~`--use-multithreading`: Use multithreading (use with caution - may lead to bugs).~~ Does not work (yet)
-  - ~~`--workers <WORKERS: number>`: Number of worker threads (requires multithreading).~~ Does not work (yet)
+  - `--use-multithreading`: Enables multithreading, significantly speeding up processing
+  - `--workers <WORKERS: number>`: Number of worker threads (requires multithreading).
   - `--from` / `--to: <COMMIT_SHA>`: Only use defined start/end point for timelapse instead of full git history. (Useful for quickly testing out parameters)
   - `--skip-step <SKIP: number>`: Skips specified worksteps. Useful for quickly re-rendering (e.g. by skipping directly to rendering step).
     - 1: Initialize repositories in `tmp/` folder
@@ -50,7 +50,6 @@ docker run -it --rm -v ${PWD}/YOUR_SOURCE:/visualizer/source -v ${PWD}/tmp:/visu
     - 5: Render video
 
 ## Not supported (yet)
-- Multithreading
 - Tracking changes across multiple tex files (e.g., using `\input`)
 - Exporting history from Overleaf as individual git commits
 - Visualize datetime (e.g., timeslider, git tags)
