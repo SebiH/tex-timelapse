@@ -68,6 +68,10 @@ tmpDir = './tmp'
 diffFile = '__diff__.txt'
 pagesFile = '__changed_pages__.txt'
 
+# how many frames are generated for fade effect
+fadeFrames = 8
+# how quickly highlight fades out
+fadeDelta = 0.025
 
 imgDir = os.path.join(tmpDir, 'img')
 try:
@@ -225,9 +229,7 @@ def pdfToImage(commit):
         print(e)
 
 
-# TODO: breaks in multithreading mode!
 changedPageTracker = {}
-
 def assembleImage(commit: git.Commit):
     try:
         workDir = getWorkDir(commit)
@@ -251,11 +253,7 @@ def assembleImage(commit: git.Commit):
 
         fadeRepetitions = 1
         if args.fadeEffect:
-            fadeRepetitions = 5
-            with open(os.path.join(workDir, pagesFile), 'r') as f:
-                for line in f.readlines():
-                    if line:
-                        changedPageTracker[line] = 1
+            fadeRepetitions = fadeFrames
                         
         for fadeRepetition in range(fadeRepetitions):
             # clone images to apply fade effect without stacking overlays
@@ -275,19 +273,14 @@ def assembleImage(commit: git.Commit):
                                 hlImages[line-1] = img
 
                 if args.fadeEffect:
-                    with open(os.path.join(workDir, pagesFile), 'r') as f:
-                        # fade effect
-                        for key in list(changedPageTracker):
-                            changedPageTracker[key] -= 0.05
-                            if changedPageTracker[key] < 0.01:
-                                changedPageTracker.pop(key)
-
-                        for line in changedPageTracker:
-                            overlay = Image.new('RGBA', images[0].size, f'#A3BE8C{int(changedPageTracker[line]*102):0>2X}')
-                            line = int(line)
-                            img = images[line-1].convert('RGBA')
+                    for page, fade in changedPageTracker[commit.hexsha].items():
+                        # small workaround to not fade out the current highlight
+                        actualFade = 1 if fade == 1 else fade - (fadeRepetition * fadeDelta)
+                        overlay = Image.new('RGBA', images[0].size, f'#A3BE8C{max(int(actualFade*102), 0):0>2X}')
+                        if page - 1 >= 0 and page - 1 < len(images):
+                            img = images[page-1].convert('RGBA')
                             img = Image.alpha_composite(img, overlay)
-                            hlImages[line-1] = img
+                            hlImages[page-1] = img
 
             img = pil_grid(hlImages, args.columns)
             img.save(f'{imgDir}/commit_{commit.authored_date}_{fadeRepetition:02}.png')
@@ -366,6 +359,32 @@ else:
 
 print('Assembling images')
 if should['assembleImage']:
+    if args.fadeEffect:
+        prevJob = None
+
+        for job in reversed(jobs):
+            workDir = getWorkDir(job)
+            changedPageTracker[job.hexsha] = {}
+
+            try:
+                with open(os.path.join(workDir, pagesFile), 'r') as f:
+                    # fade out previous highlights
+                    if prevJob is not None:
+                        for key, value in changedPageTracker[prevJob.hexsha].items():
+                            changedPageTracker[job.hexsha][key] = value - (fadeDelta * fadeFrames)
+                            if changedPageTracker[job.hexsha][key] < 0:
+                                changedPageTracker[job.hexsha].pop(key)
+
+                    # add highlight for current pages
+                    for line in f.readlines():
+                        if line:
+                            changedPageTracker[job.hexsha][int(line)] = 1    
+
+                prevJob = job
+            except Exception as e:
+                print(f'{e}')
+                pass
+
     execute(assembleImage, jobs)
     i = 0
     for file in sorted(glob(f'{imgDir}/commit_*.png')):
@@ -381,9 +400,12 @@ pool.join()
 
 print('Rendering video')
 if should['renderVideo']:
-    framerate = 5
+    framerate = fadeFrames
+    
+    # fade effect introduces multiple frames per snapshot for smoother animation
     if args.fadeEffect:
         framerate *= 5
+
     cmd = f'ffmpeg -y -framerate {framerate} -start_number 0 -i {imgDir}/%05d.png -c:v libx264 -movflags +faststart -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2:0:0:white -strict -2 output/{args.output}'
     ff = FfmpegProgress(cmd.split(' '))
     with alive_bar(manual=True) as bar:
