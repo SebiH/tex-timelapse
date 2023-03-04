@@ -53,7 +53,7 @@ parser.add_argument('--from', dest='start', type=str,
 parser.add_argument('--to', dest='end', type=str,
                     help='Define at which commit the timelapse should stop')
 
-parser.add_argument('--skip-step', dest='skip', type=int, default=0,
+parser.add_argument('--skip-to', dest='skip', type=int, default=0,
                     help='Skips specified worksteps.')
 
 args = parser.parse_args()

@@ -42,7 +42,7 @@ docker run -it --rm -v ${PWD}/YOUR_SOURCE:/visualizer/source -v ${PWD}/tmp:/visu
   - `--use-multithreading`: Enables multithreading, significantly speeding up processing
   - `--workers <WORKERS: number>`: Number of worker threads (requires multithreading).
   - `--from` / `--to: <COMMIT_SHA>`: Only use defined start/end point for timelapse instead of full git history. (Useful for quickly testing out parameters)
-  - `--skip-step <SKIP: number>`: Skips specified worksteps. Useful for quickly re-rendering (e.g. by skipping directly to rendering step).
+  - `--skip-to <SKIP: number>`: Skips to specified worksteps. Useful for quickly re-rendering (e.g. by skipping directly to rendering step).
     - 1: Initialize repositories in `tmp/` folder
     - 2: Compile PDF and write changes from git/synctex to file
     - 3: Convert PDF pages to images
