@@ -2,7 +2,7 @@
 
 Visualizes the (git) history of a LaTeX project as a timelapse video. Requires the full history of a latex project (see also "Not supported (yet)" section).
 
-[example.gif](example.gif)
+![example.gif](https://github.com/SebiH/tex-timelapse/blob/master/example.gif)
 
 
 ## Usage
