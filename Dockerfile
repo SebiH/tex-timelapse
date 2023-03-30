@@ -16,7 +16,7 @@ RUN cd install-tl-20* && \
   echo "tlpdbopt_sys_bin /usr/bin" >> install.profile && \
   ./install-tl -profile install.profile \
   && cd .. && rm -rf install-tl*
-ENV PATH="$PATH:/usr/local/texlive/2022/bin/x86_64-linuxmusl/"
+ENV PATH="$PATH:/usr/local/texlive/2023/bin/x86_64-linuxmusl/"
 RUN tlmgr path add
 # Install fonts
 RUN tlmgr install cm-super
