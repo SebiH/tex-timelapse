@@ -238,9 +238,11 @@ def assembleImage(commit: git.Commit):
         if (len(images) == 0):
             raise Exception(f'No images found for {commit.hexsha}')
 
+        # Fill array with empty images if there are not enough pages
         while (len(images) < args.rows * args.columns):
             images.append(Image.new('RGB', (1275, 1651), color='white'))
-        while ((len(images)) >= args.rows * args.columns):
+        # Remove unnecessary pages that wouldn't fit in the frame
+        while ((len(images)) > args.rows * args.columns):
             images.pop()
 
 
