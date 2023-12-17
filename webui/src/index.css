@@ -30,6 +30,8 @@ body,
     /* Internet Explorer/Edge */
     user-select: none;
     /* Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox */
+
+    box-sizing: border-box;
 }
 
 #root {
@@ -37,7 +39,6 @@ body,
     height: 100%;
     width: 100%;
     overflow: hidden;
-    z-index: 2;
 }
 
 code {

@@ -1,9 +1,12 @@
 import './App.scss';
+import CommitSlider from './features/commit-slider/commit-slider';
 
 const App = () => {
     return (
         <div className="App">
-            App works!
+            <div>
+                <CommitSlider />
+            </div>
         </div>
     );
 };
