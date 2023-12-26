@@ -42,6 +42,11 @@
       "last 1 safari version"
     ]
   },
+  "overrides": {
+    "@typescript-eslint/eslint-plugin": "6.14.0",
+    "@typescript-eslint/parser": "6.14.0",
+    "typescript": "5.3.3"
+  },
   "devDependencies": {
     "@types/react": "18.2.45",
     "@types/react-dom": "18.2.18",
