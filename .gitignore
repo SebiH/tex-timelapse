@@ -1,5 +1,4 @@
-source/
+# workdirs
+/projects/
 
-# temp workdirs
-output/
-tmp/
+__pycache__/

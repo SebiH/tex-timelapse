@@ -3,3 +3,5 @@ alive_progress
 ffmpeg-progress-yield
 gitpython
 numpy
+ruamel.yaml
+python-slugify

@@ -1,0 +1,42 @@
+# TODO: add comments
+sourceFolder: src
+mainTexFile: main.tex
+
+# TODO: add comments
+rows: 3
+columns: 6
+framerate: 8
+videoscale: 0.25
+
+# TODO: add comments
+blur: 1
+highlightChanges: true
+
+# TODO: add comments
+useMultithreading: true
+workers: 16
+
+# TODO: add comments
+startCommit: ''
+endCommit: ''
+startDate:
+endDate:
+
+# TODO: add comments
+crop: false
+cropTwoPage: false
+cropLeft: 0
+cropRight: 0
+cropTop: 0
+cropBottom: 0
+cropAltLeft: 0
+cropAltRight: 0
+cropAltTop: 0
+cropAltBottom: 0
+
+# TODO: add comments
+latexCmd: latexmk -pdf -interaction=nonstopmode -synctex=1
+
+# TODO: add comments
+overleafProjectId: ''
+overleafAuthToken: ''

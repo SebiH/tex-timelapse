@@ -28,7 +28,7 @@ docker run -it --rm -v ${PWD}/YOUR_SOURCE:/visualizer/source -v ${PWD}/tmp:/visu
   - ffmpeg
   - python3
 - Install python dependencies: `pip install -r requirements.txt`
-- Run: `python generate.py PATH/TO/MAIN.tex`
+- Run: `python tex-timelapse.py PATH/TO/MAIN.tex`
 
 
 ## Parameters

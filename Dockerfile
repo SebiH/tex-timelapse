@@ -43,7 +43,7 @@ RUN apk add --update --no-cache python3 && ln -sf python3 /usr/bin/python
 RUN python3 -m ensurepip
 RUN pip3 install --no-cache --upgrade pip setuptools
 
-WORKDIR /visualizer/
+WORKDIR /tex-timelapse/
 
 COPY requirements.txt .
 RUN pip install -r requirements.txt
@@ -51,8 +51,9 @@ RUN pip install -r requirements.txt
 # Set up texliveonfly for auto installation of latex packages
 RUN tlmgr install texliveonfly
 
-COPY generate.py .
+COPY tex-timelapse.py .
+COPY src/ .
 
 # Finish image
-ENTRYPOINT [ "python", "generate.py" ]
+ENTRYPOINT [ "python", "tex-timelapse.py" ]
 CMD [ "--help" ]
