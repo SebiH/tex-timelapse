@@ -6,20 +6,22 @@ class WebServer:
     def create_server(test_config=None):
         app = Flask(__name__)
 
-        projects = list_projects()
-
-        @app.route('/projects')
-        def listProjects():
-            return list_projects()
-
-        @app.route('/projects/<name>')
-        def project(name):
+        projects = {}
+        
+        for name in list_projects():
             project = load_project(name)
-            print([snapshot.__dict__ for snapshot in project.snapshots[0:2]])
-            return { 
+            projects[name] = {
                 'config': project.config,
                 'snapshots': [snapshot.to_json() for snapshot in project.snapshots]
             }
+
+        @app.route('/projects')
+        def listProjects():
+            return projects.keys()
+
+        @app.route('/projects/<name>')
+        def project(name):
+            return projects[name]
 
         @app.route('/projects/<name>/run', methods=['POST'])
         def runProject():
