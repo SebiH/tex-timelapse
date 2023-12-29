@@ -3,11 +3,10 @@
 import argparse
 import os
 import shutil
-from glob import glob
+
 from slugify import slugify
-from src.project import TimelapseProject
-from src.projectconfig import ProjectConfig
-from src.util.serialization import loadFromFile
+from src.project import list_projects, load_project
+from src.webserver import WebServer
 
 
 ############################
@@ -55,7 +54,11 @@ runParser.add_argument(
 # ------------
 listParser = subparsers.add_parser('list', help='List all projects')
 
-args = parser.parse_args()
+# --------------
+# --- server ---
+# --------------
+serverParser = subparsers.add_parser('server', help='Server')
+
 
 ############################
 # Actions
@@ -78,12 +81,8 @@ def initProject(name: str):
 
 def runProject(name: str, output: str, args):
     print(f"Running project '{name}'...")
+    project = load_project(name)
 
-    projectName = slugify(name)
-    # load project from file
-    config: ProjectConfig = loadFromFile(f'./projects/{projectName}/project.yaml')
-    project = TimelapseProject(projectName, config)
-    
     if args.stage is not None:
         project.setStage(args.stage)
 
@@ -92,13 +91,15 @@ def runProject(name: str, output: str, args):
 
 def listProjects():
     print("Available projects:")
-    for file in glob(f'projects/**/project.yaml', recursive=True):
-        print(f" - {os.path.dirname(file).removeprefix('projects/')}");
+    for project in list_projects():
+        print(f" - {project}");
 
 
 ############################
 # Main
 ############################
+
+args = parser.parse_args()
 
 if (args.action == 'init'):
     initProject(args.project)
@@ -106,6 +107,9 @@ elif (args.action == 'run'):
     runProject(args.project, args.output, args)
 elif (args.action == 'list'):
     listProjects()
+elif (args.action == 'server'):
+    WebServer.create_server().run()
+    
 else:
     print(f"Unknown action '{args.action}'")
     parser.print_help()

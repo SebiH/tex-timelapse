@@ -6,6 +6,7 @@ from typing import List
 from alive_progress import alive_bar
 from ffmpeg_progress_yield import FfmpegProgress
 import git
+from slugify import slugify
 
 from .projectconfig import ProjectConfig
 from .snapshot import Snapshot, SnapshotStatus
@@ -131,3 +132,18 @@ class TimelapseProject:
         #     self.log(f'Job "{job.getName()}" for snapshot {snapshot.commit_sha} failed with error: {e}')
         saveToFile(f'{snapshot.getWorkDir()}/snapshot.yaml', snapshot);
         bar()
+
+
+def list_projects() -> list[TimelapseProject]:
+    return [
+        os.path.dirname(file).removeprefix('projects/')
+        for file in  glob(f'projects/**/project.yaml', recursive=True)
+    ]
+
+
+def load_project(name: str) -> TimelapseProject:
+    # load project from file
+    projectName = slugify(name)
+    config: ProjectConfig = loadFromFile(f'./projects/{projectName}/project.yaml')
+    project = TimelapseProject(projectName, config)
+    return project

@@ -5,3 +5,4 @@ gitpython
 numpy
 ruamel.yaml
 python-slugify
+flask

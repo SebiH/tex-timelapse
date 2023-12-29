@@ -31,7 +31,7 @@ class Snapshot:
         #pdf_file: str
 
         #pages: list[str] = []
-        self.gitDiff: dict[str, ] = '' # file -> changedLines
+        self.gitDiff: dict[str, str] = '' # file -> changedLines
         self.changed_pages: list[int] = []
 
 
@@ -48,3 +48,15 @@ class Snapshot:
             self.error = output.stderr
             raise Exception(f"Command '{cmd}' failed with error: {output.stderr}")
         return output.stdout
+
+
+    def to_json(self):
+        return {
+            'commit_sha': self.commit_sha,
+            'commit_date': self.commit_date,
+            'status': self.status,
+            'error': self.error,
+            'includes': list(self.includes),
+            'gitDiff': self.gitDiff,
+            'changed_pages': list(self.changed_pages)
+        }
