@@ -15,15 +15,15 @@ class WebServer:
                 'snapshots': [snapshot.to_json() for snapshot in project.snapshots]
             }
 
-        @app.route('/projects')
+        @app.route('/api/projects')
         def listProjects():
-            return projects.keys()
+            return list(projects.keys())
 
-        @app.route('/projects/<name>')
+        @app.route('/api/projects/<name>')
         def project(name):
             return projects[name]
 
-        @app.route('/projects/<name>/run', methods=['POST'])
+        @app.route('/api/projects/<name>/run', methods=['POST'])
         def runProject():
             print(request.form)
             return list_projects()
