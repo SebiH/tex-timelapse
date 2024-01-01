@@ -70,6 +70,50 @@ class TimelapseProject:
             for job in self.jobs[stage-1:]:
                 snapshot.status[job.getName()] = SnapshotStatus.PENDING
 
+    def compileSnapshot(self, snapshot_sha: str):
+        prevJob: str = None
+        for job in self.jobs:
+            job.init(self.projectFolder)
+
+            # Filter snapshots
+            eligibleSnapshots = []
+            for snapshot in self.snapshots:
+                if snapshot.commit_sha != snapshot_sha:
+                    continue
+
+                if snapshot.status.get(job.getName()) == SnapshotStatus.COMPLETED:
+                    continue
+
+                # prevjob did not run
+                if prevJob is not None and prevJob not in snapshot.status:
+                    continue
+
+                # prevjob failed
+                if prevJob is not None and snapshot.status[prevJob] != SnapshotStatus.COMPLETED:
+                    continue
+
+                snapshot.error = ''
+                eligibleSnapshots.append(snapshot)
+
+            # Run job
+            print(job.getName())
+            pool = ThreadPool(self.config['workers'])
+
+            with alive_bar(len(eligibleSnapshots)) as bar:
+                if self.config['useMultithreading']:
+                    pool.map(lambda snapshot: self.runJob(job, snapshot, bar), eligibleSnapshots)
+                else:
+                    for snapshot in eligibleSnapshots:
+                        bar.text = f"{snapshot.commit_date} ({snapshot.commit_sha})"
+                        self.runJob(job, snapshot, bar)
+
+            pool.close()
+            pool.join()
+
+            prevJob = job.getName()
+            job.cleanup()
+
+
     def run(self, output: str):
         prevJob: str = None
         for job in self.jobs:

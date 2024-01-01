@@ -19,10 +19,10 @@ const ProjectList = () => {
                 <h2>Projects</h2>
             </div>
 
-            <div className='projects'>
+            <div className='project-list'>
                 {projectNames.map((projectName) => (
                     <Link to={`/projects/${projectName}`} className='project-link' key={projectName}>
-                        <div className='project'>
+                        <div className='project-entry'>
                             {projectName}
                             <FontAwesomeIcon icon={faUpRightFromSquare} />
                         </div>

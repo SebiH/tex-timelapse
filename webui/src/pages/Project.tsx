@@ -29,7 +29,7 @@ const Project = () => {
         const pages = a.map(n => `/api/projects/test/snapshot/${selectedCommit.commit_sha}/image/page-0${n}.png`);
 
         commitPages = <div className='imgContainer'>
-            { pages.map(p => <img src={p} alt='page' />) }
+            { pages.map(p => <img src={p} alt='page' key={p} />) }
         </div>;
     }
 
@@ -50,6 +50,17 @@ const Project = () => {
     }
 
     const runSnapshot = async () => {
+        const request = await fetch(`/api/projects/${project.name}/snapshot/${selectedCommit?.commit_sha}/run`);
+        const response = await request.json();
+
+        if (response.error) {
+            console.warn(response.error);
+        } else if (selectedCommit) {
+            selectedCommit.status = {
+                'PDF to Image': 'Completed',
+                'Compile LaTeX': 'Completed'
+            };
+        }
     };
 
     return (

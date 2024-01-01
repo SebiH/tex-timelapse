@@ -1,9 +1,9 @@
 .header,
-.projects {
+.projectlist {
     width: 500px;
 }
 
-.projects {
+.project-list {
     display: flex;
     flex-direction: column;
     flex-wrap: wrap;
@@ -11,29 +11,29 @@
     align-items: flex-start;
     margin-top: 20px;
     margin-bottom: 20px;
-}
 
-.project {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    width: 500px;
-    height: 50px;
-    margin-bottom: 10px;
-    padding: 10px 20px;
-    border-radius: 5px;
-    background-color: #f2f2f2;
-    cursor: pointer;
+    .project-entry {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        width: 500px;
+        height: 50px;
+        margin-bottom: 10px;
+        padding: 10px 20px;
+        border-radius: 5px;
+        background-color: #f2f2f2;
+        cursor: pointer;
 
-    transition: background-color 0.2s ease-in-out;
-}
+        transition: background-color 0.2s ease-in-out;
+    }
 
-.project::hover {
-    background-color: #e6e6e6;
-}
+    .project-entry:hover {
+        background-color: #BFDBFE;
+    }
 
-.project-link {
-    text-decoration: none;
-    color: black;
+    .project-link {
+        text-decoration: none;
+        color: black;
+    }
 }

@@ -17,6 +17,7 @@ class WebServer:
             project = load_project(name)
             localProjects[name] = project
             webProjects[name] = {
+                'name': name,
                 'config': project.config,
                 'snapshots': [snapshot.to_json() for snapshot in project.snapshots]
             }
@@ -44,8 +45,12 @@ class WebServer:
 
         @app.route('/api/projects/<name>/snapshot/<snapshot>/run')
         def compileSnapshot(name, snapshot):
-            print(request.form)
-            return list_projects()
+            project = localProjects[name]
+            try:
+                project.compileSnapshot(snapshot)
+                return { 'success': True }
+            except Exception as e:
+                return { 'success': False, 'error': str(e) }
 
         @app.route('/api/projects/<name>/snapshot/<snapshot>/pdf')
         def getPdf(name, snapshot):
