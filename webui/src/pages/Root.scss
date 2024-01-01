@@ -1,0 +1,29 @@
+// Define the overlay
+.overlay {
+    position: fixed; // Fixed positioning to cover the entire page
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5); // Semi-transparent black background
+    display: flex; // Use flexbox for centering
+    justify-content: center; // Center horizontally
+    align-items: center; // Center vertically
+    z-index: 9999; // Ensure the overlay is on top of other content
+}
+
+// Define the loading indicator
+.loading-indicator {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #fff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+// Define the spin animation
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
