@@ -8,7 +8,7 @@ export async function loader() {
     return await fetch('/api/projects');
 }
 
-export default function ProjectList() {
+const ProjectList = () => {
     const projectNames = useLoaderData() as string[] || [];
 
     return (
@@ -44,4 +44,6 @@ export default function ProjectList() {
             </div>
         </div>
     );
-}
+};
+
+export default ProjectList;

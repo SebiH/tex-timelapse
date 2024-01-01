@@ -13,13 +13,14 @@
         background: black;
     }
 
-    .commit {
+    .snapshot {
         position: absolute;
         top: 0;
         width: 20px;
         height: 20px;
         border-radius: 50%;
         background: red;
+        border: 1px solid black;
 
         transition: 0.2s linear;
 
