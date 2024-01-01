@@ -5,7 +5,7 @@ export async function loader() {
 }
 
 export default function ProjectList() {
-    const projectNames = useLoaderData() as string[];
+    const projectNames = useLoaderData() as string[] || [];
 
     return (
         <div>

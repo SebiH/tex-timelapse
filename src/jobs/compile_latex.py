@@ -9,6 +9,7 @@ class CompileLatexJob(Job):
         return "Compile LaTeX"
 
     def init(self, project_dir: str) -> None:
+        # TODO: texliveonfly?
         pass
 
     def cleanup(self) -> None:
