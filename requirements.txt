@@ -6,3 +6,4 @@ numpy
 ruamel.yaml
 python-slugify
 flask
+flask-socketio

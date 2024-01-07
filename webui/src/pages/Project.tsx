@@ -1,12 +1,13 @@
 import { LoaderFunctionArgs, useLoaderData } from 'react-router-dom';
 import SnapshotSlider from '../features/snapshot-slider/snapshot-slider';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import './Project.scss';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCube, faCubes } from '@fortawesome/free-solid-svg-icons';
 import { TimelapseProject } from '../models/project';
 import { TimelapseSnapshot } from '../models/snapshot';
+import { socket } from '../socketio';
 
 export async function loader({ params }: LoaderFunctionArgs<{ projectName: string }>) {
     return await fetch(`/api/projects/${params.projectName}`);
@@ -14,6 +15,17 @@ export async function loader({ params }: LoaderFunctionArgs<{ projectName: strin
 
 const Project = () => {
     const project = useLoaderData() as TimelapseProject;
+
+    useEffect(() => {
+        const onData = (data: any) => {
+            console.log(data);
+        };
+        socket.on('log', onData);
+
+        return () => {
+            socket.off('log', onData);
+        };
+    }, []);
 
     if (!project) {
         return <div>Loading... / Show new project site</div>;

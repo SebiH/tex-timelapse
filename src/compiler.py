@@ -67,6 +67,7 @@ def compileSnapshot(project: Project, snapshot_sha: str, actions: List[Action], 
         if not canRun(prevAction, action, snapshot):
             break
 
+        snapshot.error = ''
         action.init(project)
 
         # Run job
@@ -108,7 +109,6 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
 
 
 def runAction(action: Action, snapshot: Snapshot, reporter: Reporter):
-    snapshot.error = ''
     snapshot.status[action.getName()] = SnapshotStatus.IN_PROGRESS
 
     try:

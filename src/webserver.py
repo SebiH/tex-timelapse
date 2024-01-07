@@ -2,13 +2,17 @@ from os import path
 import os
 from flask import Flask, send_file
 from flask import request
+from flask_socketio import SocketIO
 
+from .runners.web_runner import WebReporter
+from .compiler import compileSnapshot
 from .snapshot import Snapshot
 from .project import Project, list_projects
 
 class WebServer:
-    def create_server(test_config=None):
-        app = Flask(__name__)
+    def __init__(self):
+        self.app = Flask(__name__)
+        self.socketio = SocketIO(self.app)
 
         webProjects = {}
         localProjects: dict[str, Project] = {}
@@ -19,40 +23,51 @@ class WebServer:
             webProjects[name] = {
                 'name': name,
                 'config': project.config,
-                'snapshots': [snapshot.to_json() for snapshot in project.snapshots]
+                'snapshots': [snapshot.to_dict() for snapshot in project.snapshots]
             }
 
-        @app.route('/api/projects')
+        @self.app.route('/api/projects')
         def listProjects():
             return list(webProjects.keys())
 
-        @app.route('/api/projects/<name>')
+        @self.app.route('/api/projects/<name>')
         def getProject(name):
             return webProjects[name]
 
-        @app.route('/api/projects/<name>', methods=['PUT'])
+        @self.app.route('/api/projects/<name>', methods=['PUT'])
         def createProject(name):
             return True
 
-        @app.route('/api/projects/<name>', methods=['POST'])
+        @self.app.route('/api/projects/<name>', methods=['POST'])
         def editProject(name):
             return True
 
-        @app.route('/api/projects/<name>/run')
+        @self.app.route('/api/projects/<name>/run')
         def runProject(name):
             print(request.form)
             return list_projects()
 
-        @app.route('/api/projects/<name>/snapshot/<snapshot>/run')
-        def compileSnapshot(name, snapshot):
+        @self.app.route('/api/projects/<name>/snapshot/<snapshot>/run')
+        def compileSnapshotX(name, snapshot):
             project = localProjects[name]
             try:
-                project.compileSnapshot(snapshot)
+                from .actions.init_repo import InitRepoAction
+                from .actions.compile_latex import CompileLatexAction
+                from .actions.pdf_to_image import PdfToImageAction
+                from .actions.assemble_image import AssembleImageAction
+                jobs = [
+                    InitRepoAction(),
+                    CompileLatexAction(),
+                    PdfToImageAction(),
+                    AssembleImageAction()
+                ]
+
+                compileSnapshot(project, snapshot, jobs, WebReporter(self.socketio))
                 return { 'success': True }
             except Exception as e:
                 return { 'success': False, 'error': str(e) }
 
-        @app.route('/api/projects/<name>/snapshot/<snapshot>/pdf')
+        @self.app.route('/api/projects/<name>/snapshot/<snapshot>/pdf')
         def getPdf(name, snapshot):
             try:
                 project =  localProjects[name]
@@ -63,7 +78,7 @@ class WebServer:
             except Exception as e:
                 return str(e)
 
-        @app.route('/api/projects/<name>/snapshot/<snapshot>/image/<image>')
+        @self.app.route('/api/projects/<name>/snapshot/<snapshot>/image/<image>')
         def getImage(name, snapshot, image):
             try:
                 project =  localProjects[name]
@@ -73,5 +88,9 @@ class WebServer:
             except Exception as e:
                 return str(e)
         
+    def send_message(self, message):
+        self.socketio.emit('message', message)
 
-        return app
+    def run(self):
+        self.socketio.run(self.app)
+

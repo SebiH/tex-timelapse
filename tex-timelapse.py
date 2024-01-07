@@ -125,7 +125,7 @@ elif (args.action == 'run'):
 elif (args.action == 'list'):
     listProjects()
 elif (args.action == 'server'):
-    WebServer.create_server().run()
+    WebServer().run()
     
 else:
     print(f"Unknown action '{args.action}'")
