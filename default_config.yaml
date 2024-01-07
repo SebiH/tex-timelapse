@@ -13,10 +13,6 @@ blur: 1
 highlightChanges: true
 
 # TODO: add comments
-useMultithreading: true
-workers: 16
-
-# TODO: add comments
 startCommit: ''
 endCommit: ''
 startDate:

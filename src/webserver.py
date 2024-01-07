@@ -4,17 +4,17 @@ from flask import Flask, send_file
 from flask import request
 
 from .snapshot import Snapshot
-from .project import TimelapseProject, list_projects, load_project
+from .project import Project, list_projects
 
 class WebServer:
     def create_server(test_config=None):
         app = Flask(__name__)
 
         webProjects = {}
-        localProjects: dict[str, TimelapseProject] = {}
+        localProjects: dict[str, Project] = {}
         
         for name in list_projects():
-            project = load_project(name)
+            project = Project(name)
             localProjects[name] = project
             webProjects[name] = {
                 'name': name,

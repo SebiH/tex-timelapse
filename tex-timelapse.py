@@ -5,7 +5,10 @@ import os
 import shutil
 
 from slugify import slugify
-from src.project import list_projects, load_project
+
+from src.runners.terminal_runner import TerminalReporter
+from src.compiler import compileProject
+from src.project import Project, list_projects
 from src.webserver import WebServer
 
 
@@ -49,6 +52,9 @@ runParser.add_argument(
     type=int,
     help='Start from stage (default: all)')
 
+# TODO: non-project-specific general arguments; add these to docker-compose.yml
+# workers: int # TODO: -1 should set to cpu count; 1 should disable multiprocessing
+
 # ------------
 # --- list ---
 # ------------
@@ -81,12 +87,23 @@ def initProject(name: str):
 
 def runProject(name: str, output: str, args):
     print(f"Running project '{name}'...")
-    project = load_project(name)
+    project = Project(name)
 
     if args.stage is not None:
         project.setStage(args.stage)
 
-    project.run(output)
+    from src.jobs.init_repo import InitRepoJob
+    from src.jobs.compile_latex import CompileLatexJob
+    from src.jobs.pdf_to_image import PdfToImageJob
+    from src.jobs.assemble_image import AssembleImageJob
+    jobs = [
+        InitRepoJob(),
+        CompileLatexJob(),
+        PdfToImageJob(),
+        AssembleImageJob()
+    ]
+
+    compileProject(project, output, jobs, TerminalReporter())
 
 
 def listProjects():

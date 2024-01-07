@@ -1,7 +1,7 @@
 import datetime
 from typing import  TypedDict
 
-class ProjectConfig(TypedDict):
+class Config(TypedDict):
     sourceFolder: str
     mainTexFile: str
 

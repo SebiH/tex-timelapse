@@ -1,5 +1,5 @@
 from .job import Job
-from ..projectconfig import ProjectConfig
+from ..project import Project
 from ..snapshot import Snapshot, SnapshotStatus
 import re
 import os
@@ -8,20 +8,21 @@ class CompileLatexJob(Job):
     def getName(self) -> str:
         return "Compile LaTeX"
 
-    def init(self, project_dir: str) -> None:
+    def init(self, project: Project) -> None:
+        self.latexCmd = project.config['latexCmd']
         # TODO: texliveonfly?
         pass
 
     def cleanup(self) -> None:
         pass
 
-    def run(self, snapshot: Snapshot, config: ProjectConfig) -> SnapshotStatus:
+    def run(self, snapshot: Snapshot) -> SnapshotStatus:
         workDir = snapshot.getWorkDir()
         texFile = snapshot.main_tex_file
         installCmd = f'texliveonfly {texFile}'
         snapshot.execute(installCmd, "latex")
 
-        compileCmd = f"{config['latexCmd']} {texFile}"
+        compileCmd = f"{self.latexCmd} {texFile}"
         snapshot.execute(compileCmd, "latex")
 
         changedLines = set()

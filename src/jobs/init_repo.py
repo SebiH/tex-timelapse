@@ -1,5 +1,5 @@
 from .job import Job
-from ..projectconfig import ProjectConfig
+from ..project import Project
 from ..snapshot import Snapshot, SnapshotStatus
 from shutil import rmtree, copytree
 
@@ -8,15 +8,17 @@ class InitRepoJob(Job):
     def getName(self) -> str:
         return "Init Repository"
 
-    def init(self, project_dir: str) -> None:
+    def init(self, project: Project) -> None:
+        self.sourceFolder = project.config["sourceFolder"]
+        # TODO: call git gc --aggressive to speed things up
         pass
 
     def cleanup(self) -> None:
         pass
 
-    def run(self, snapshot: Snapshot, config: ProjectConfig) -> SnapshotStatus:
+    def run(self, snapshot: Snapshot) -> SnapshotStatus:
         workDir = snapshot.getWorkDir()
-        copytree(f'{snapshot.project_dir}/{config["sourceFolder"]}/.git', f'{workDir}/latex/.git')
+        copytree(f'{snapshot.project_dir}/{self.sourceFolder}/.git', f'{workDir}/latex/.git', dirs_exist_ok=True)
         cmd = f'git reset --hard {snapshot.commit_sha}'
         snapshot.execute(cmd, "latex")
 

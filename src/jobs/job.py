@@ -1,14 +1,14 @@
 from abc import ABC, abstractmethod
-from ..projectconfig import ProjectConfig
+from ..project import Project
 from ..snapshot import Snapshot, SnapshotStatus
 
 class Job(ABC):
     @abstractmethod
-    def init(self, project_dir: str) -> None:
+    def init(self, project: Project) -> None:
         pass
 
     @abstractmethod
-    def run(self, snapshot: Snapshot, config: ProjectConfig) -> SnapshotStatus:
+    def run(self, snapshot: Snapshot) -> SnapshotStatus:
         pass
 
     @abstractmethod

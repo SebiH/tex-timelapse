@@ -4,7 +4,6 @@ import subprocess
 import os
 
 class SnapshotStatus(object):
-    PENDING = "Pending"
     IN_PROGRESS = "In Progress"
     COMPLETED = "Completed"
     FAILED = "Failed"
@@ -38,10 +37,10 @@ class Snapshot:
     def getWorkDir(self) -> str:
         return os.path.join(self.project_dir, 'snapshots', self.commit_sha)
 
-    def execute(self, cmd: str, folder: str = None) -> str:
+    def execute(self, cmd: str, sub_folder: str = None) -> str:
         cwd = self.getWorkDir()
-        if folder is not None:
-            cwd = os.path.join(cwd, folder)
+        if sub_folder is not None:
+            cwd = os.path.join(cwd, sub_folder)
 
         output = subprocess.run(cmd.split(), cwd=cwd, capture_output=True, text=True)
         if output.returncode != 0:
@@ -50,7 +49,7 @@ class Snapshot:
         return output.stdout
 
 
-    def to_json(self):
+    def to_dict(self):
         return {
             'commit_sha': self.commit_sha,
             'commit_date': self.commit_date,
