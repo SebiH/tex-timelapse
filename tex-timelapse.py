@@ -92,15 +92,15 @@ def runProject(name: str, output: str, args):
     if args.stage is not None:
         project.setStage(args.stage)
 
-    from src.jobs.init_repo import InitRepoJob
-    from src.jobs.compile_latex import CompileLatexJob
-    from src.jobs.pdf_to_image import PdfToImageJob
-    from src.jobs.assemble_image import AssembleImageJob
+    from src.actions.init_repo import InitRepoAction
+    from src.actions.compile_latex import CompileLatexAction
+    from src.actions.pdf_to_image import PdfToImageAction
+    from src.actions.assemble_image import AssembleImageAction
     jobs = [
-        InitRepoJob(),
-        CompileLatexJob(),
-        PdfToImageJob(),
-        AssembleImageJob()
+        InitRepoAction(),
+        CompileLatexAction(),
+        PdfToImageAction(),
+        AssembleImageAction()
     ]
 
     compileProject(project, output, jobs, TerminalReporter())

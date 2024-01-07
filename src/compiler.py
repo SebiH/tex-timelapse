@@ -8,7 +8,7 @@ from .project import Project
 from .reporter import Reporter
 from .snapshot import Snapshot, SnapshotStatus
 from .util.serialization import saveToFile
-from .jobs.job import Job
+from .actions.action import Action
 
 pool = ThreadPool(multiprocessing.cpu_count())
 
@@ -20,7 +20,7 @@ def set_threads(threads: int):
     pool = ThreadPool(threads)
 
 
-# from .jobs.init_repo import InitRepoJob
+# from .actions.init_repo import InitRepoJob
 # from .jobs.compile_latex import CompileLatexJob
 # from .jobs.pdf_to_image import PdfToImageJob
 # from .jobs.assemble_image import AssembleImageJob
@@ -33,24 +33,24 @@ def set_threads(threads: int):
 
 
 
-def canRun(prevJob: str, job: Job, snapshot: Snapshot) -> bool:
-    # job already complete
-    if snapshot.status.get(job.getName()) == SnapshotStatus.COMPLETED:
+def canRun(prevAction: str, action: Action, snapshot: Snapshot) -> bool:
+    # action already complete
+    if snapshot.status.get(action.getName()) == SnapshotStatus.COMPLETED:
         return False
 
-    if prevJob is not None:
-        # prevjob did not run
-        if prevJob not in snapshot.status:
+    if prevAction is not None:
+        # prevAction did not run
+        if prevAction not in snapshot.status:
             return False
 
-        # prevjob failed
-        if snapshot.status[prevJob] != SnapshotStatus.COMPLETED:
+        # prevAction failed
+        if snapshot.status[prevAction] != SnapshotStatus.COMPLETED:
             return False
 
     return True
 
 
-def compileSnapshot(project: Project, snapshot_sha: str, jobs: List[Job], reporter: Reporter):
+def compileSnapshot(project: Project, snapshot_sha: str, actions: List[Action], reporter: Reporter):
     matching_snapshot = [s for s in project.snapshots if s.commit_sha == snapshot_sha]
 
     if len(matching_snapshot) == 0:
@@ -62,32 +62,32 @@ def compileSnapshot(project: Project, snapshot_sha: str, jobs: List[Job], report
     # TODO: snapshot.status = SnapshotStatus.PENDING
     # TODO: snapshot.error = ''
 
-    prevJob = None
-    for job in jobs:
-        if not canRun(prevJob, job, snapshot):
+    prevAction = None
+    for action in actions:
+        if not canRun(prevAction, action, snapshot):
             break
 
-        job.init(project)
+        action.init(project)
 
         # Run job
-        reporter.set_stage(job.getName(), 1)
-        runJob(job, snapshot, reporter)
-        job.cleanup()
-        prevJob = job.getName()
+        reporter.set_stage(action.getName(), 1)
+        runAction(action, snapshot, reporter)
+        action.cleanup()
+        prevAction = action.getName()
 
 
-def compileProject(project: Project, output: str, jobs: List[Job], reporter: Reporter):
+def compileProject(project: Project, output: str, actions: List[Action], reporter: Reporter):
 
-    prevJob = None
-    for job in jobs:
-        job.init(project)
+    prevAction = None
+    for action in actions:
+        action.init(project)
 
-        reporter.set_stage(job.getName(), len(project.snapshots))
-        snapshots = [s for s in project.snapshots if canRun(prevJob, job, s)]
-        pool.map(lambda snapshot: runJob(job, snapshot, reporter), snapshots)
+        reporter.set_stage(action.getName(), len(project.snapshots))
+        snapshots = [s for s in project.snapshots if canRun(prevAction, action, s)]
+        pool.map(lambda snapshot: runAction(action, snapshot, reporter), snapshots)
 
-        job.cleanup()
-        prevJob = job.getName()
+        action.cleanup()
+        prevAction = action.getName()
 
     # render video
     reporter.set_stage("Rendering video", 1)
@@ -107,16 +107,16 @@ def compileProject(project: Project, output: str, jobs: List[Job], reporter: Rep
         reporter.set_progress(progress / 100)
 
 
-def runJob(job: Job, snapshot: Snapshot, reporter: Reporter):
+def runAction(action: Action, snapshot: Snapshot, reporter: Reporter):
     snapshot.error = ''
-    snapshot.status[job.getName()] = SnapshotStatus.IN_PROGRESS
+    snapshot.status[action.getName()] = SnapshotStatus.IN_PROGRESS
 
     try:
-        result = job.run(snapshot)
-        snapshot.status[job.getName()] = result
+        result = action.run(snapshot)
+        snapshot.status[action.getName()] = result
     except Exception as e:
-        snapshot.status[job.getName()] = SnapshotStatus.FAILED
+        snapshot.status[action.getName()] = SnapshotStatus.FAILED
         snapshot.error = str(e)
-        reporter.log(f'Job "{job.getName()}" for snapshot {snapshot.commit_sha} failed with error: {e}')
+        reporter.log(f'Action "{action.getName()}" for snapshot {snapshot.commit_sha} failed with error: {e}')
     saveToFile(f'{snapshot.getWorkDir()}/snapshot.yaml', snapshot)
     reporter.add_progress()

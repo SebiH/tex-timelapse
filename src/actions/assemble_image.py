@@ -1,5 +1,5 @@
 import os
-from .job import Job
+from .action import Action
 from ..project import Project
 from ..snapshot import Snapshot, SnapshotStatus
 from PIL import Image, ImageFilter
@@ -22,7 +22,7 @@ def pil_grid(images, max_horiz=np.iinfo(int).max):
     return im_grid
 
 
-class AssembleImageJob(Job):
+class AssembleImageAction(Action):
     def getName(self) -> str:
         return "Assemble Image"
 

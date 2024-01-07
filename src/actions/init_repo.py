@@ -1,10 +1,10 @@
-from .job import Job
+from .action import Action
 from ..project import Project
 from ..snapshot import Snapshot, SnapshotStatus
 from shutil import rmtree, copytree
 
 
-class InitRepoJob(Job):
+class InitRepoAction(Action):
     def getName(self) -> str:
         return "Init Repository"
 

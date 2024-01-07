@@ -1,10 +1,10 @@
-from .job import Job
+from .action import Action
 from ..project import Project
 from ..snapshot import Snapshot, SnapshotStatus
 import re
 import os
 
-class CompileLatexJob(Job):
+class CompileLatexAction(Action):
     def getName(self) -> str:
         return "Compile LaTeX"
 

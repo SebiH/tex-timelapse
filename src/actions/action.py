@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from ..project import Project
 from ..snapshot import Snapshot, SnapshotStatus
 
-class Job(ABC):
+class Action(ABC):
     @abstractmethod
     def init(self, project: Project) -> None:
         pass

@@ -1,10 +1,9 @@
-
 import os
-from .job import Job
+from .action import Action
 from ..project import Project
 from ..snapshot import Snapshot, SnapshotStatus
 
-class PdfToImageJob(Job):
+class PdfToImageAction(Action):
     def getName(self) -> str:
         return 'PDF to Image'
 
