@@ -33,6 +33,11 @@ initParser.add_argument(
     type=str,
     help='Name of the project')
 
+initParser.add_argument(
+    'source',
+    type=str,
+    help='Source folder containing the .git repository of the LaTeX project')
+
 # -----------
 # --- run ---
 # -----------
@@ -72,12 +77,21 @@ serverParser = subparsers.add_parser('server', help='Server')
 # Actions
 ############################
 
-def initProject(name: str):
+def initProject(name: str, source: str):
     print(f"Initializing project '{name}' with default values...")
     
     # create folder
     folder = f'./projects/{slugify(name)}'
     os.makedirs(folder, exist_ok=True)
+
+    # init source folder
+    os.makedirs(f'{folder}/source', exist_ok=True)
+
+    # extract source zip into source folder
+    if source.endswith('.zip'):
+        shutil.unpack_archive(source, f'{folder}/source')
+    else:
+        raise Exception(f"Currently only zip source files are supported. Got: {source}")
 
     # copy default config
     shutil.copyfile('./default_config.yaml', f'{folder}/project.yaml')
@@ -128,7 +142,7 @@ def listProjects():
 args = parser.parse_args()
 
 if (args.action == 'init'):
-    initProject(args.project)
+    initProject(args.project, args.source)
 elif (args.action == 'run'):
     runProject(args.project, args.output, args)
 elif (args.action == 'list'):

@@ -2,7 +2,6 @@ import datetime
 from typing import  TypedDict
 
 class Config(TypedDict, total=False):
-    sourceFolder: str
     mainTexFile: str
 
     rows: int

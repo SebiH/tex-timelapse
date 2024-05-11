@@ -9,8 +9,7 @@ class InitRepoAction(Action):
         return "Init Repository"
 
     def init(self, project: Project) -> None:
-        self.sourceFolder = project.config["sourceFolder"]
-        # TODO: call git gc --aggressive to speed things up
+        self.sourceFolder = f'{project.projectFolder}/source'
         pass
 
     def cleanup(self) -> None:
