@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Tex-Timelapse",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/tex-timelapse.py",
+            "args": ["run", "sample", "sample.mp4"],
+            "console": "integratedTerminal"
+        }
+    ]
+}
