@@ -38,7 +38,7 @@ class Project:
         print(f"Loaded {len(self.snapshots)} existing snapshots")
 
         # Check if there are any missing snapshots
-        repo = git.Repo(os.path.join(self.projectFolder, self.config['sourceFolder']))
+        repo = git.Repo(os.path.join(self.projectFolder, 'source'))
         missingCounter = 0
         for commit in list(repo.iter_commits()):
             if commit.hexsha not in [snapshot.commit_sha for snapshot in self.snapshots]:

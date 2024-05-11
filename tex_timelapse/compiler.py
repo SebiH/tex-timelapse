@@ -40,7 +40,7 @@ def canRun(prevAction: str, action: Action, snapshot: Snapshot) -> bool:
     if snapshot.status.get(action.getName()) == SnapshotStatus.COMPLETED:
         return False
 
-    if prevAction is not None:
+    if prevAction != '':
         # prevAction did not run
         if prevAction not in snapshot.status:
             return False
@@ -87,7 +87,13 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
 
         reporter.set_stage(action.getName(), len(project.snapshots))
         snapshots = [s for s in project.snapshots if canRun(prevAction, action, s)]
-        pool.map(lambda snapshot: runAction(action, snapshot, reporter), snapshots)
+        # pool.map(lambda snapshot: runAction(action, snapshot, reporter), snapshots)
+        for snapshot in snapshots:
+            runAction(action, snapshot, reporter)
+
+        # successful snapshots
+        num_successful = len([s for s in snapshots if s.status[action.getName()] == SnapshotStatus.COMPLETED])
+        reporter.log(f"Action {action.getName()} completed for {num_successful} snapshots")
 
         action.cleanup()
         prevAction = action.getName()
