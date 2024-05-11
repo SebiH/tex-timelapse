@@ -30,7 +30,7 @@ cropAltTop: 0
 cropAltBottom: 0
 
 # TODO: add comments
-latexCmd: latexmk -pdf -interaction=nonstopmode -synctex=1
+latexCmd: latexmk -pdf -interaction=nonstopmode -synctex=1 -f
 
 # TODO: add comments
 overleafProjectId: ''

@@ -6,7 +6,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/tex-timelapse.py",
-            "args": ["run", "sample", "sample.mp4"],
+            "args": ["run", "sample", "sample"],
             "console": "integratedTerminal"
         }
     ]

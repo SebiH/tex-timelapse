@@ -20,10 +20,18 @@ class CompileLatexAction(Action):
         workDir = snapshot.getWorkDir()
         texFile = snapshot.main_tex_file
         installCmd = f'texliveonfly {texFile}'
-        snapshot.execute(installCmd, "latex")
+        try:
+            snapshot.execute(installCmd, "latex")
+        except:
+            # ignore errors in case it somehow still compiled
+            pass
 
         compileCmd = f"{self.latexCmd} {texFile}"
-        snapshot.execute(compileCmd, "latex")
+        try:
+            snapshot.execute(compileCmd, "latex")
+        except:
+            # ignore errors in case it somehow still compiled
+            pass
 
         changedLines = set()
 
