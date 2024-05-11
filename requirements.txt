@@ -7,3 +7,4 @@ ruamel.yaml
 python-slugify
 flask
 flask-socketio
+types-Pillow

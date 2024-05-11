@@ -4,10 +4,9 @@ from flask import Flask, send_file
 from flask import request
 from flask_socketio import SocketIO
 
-from .runners.web_runner import WebReporter
-from .compiler import compileSnapshot
-from .snapshot import Snapshot
-from .project import Project, list_projects
+from tex_timelapse.runners.web_runner import WebReporter
+from tex_timelapse.compiler import compileSnapshot
+from tex_timelapse.project import Project, list_projects
 
 class WebServer:
     def __init__(self):

@@ -1,5 +1,5 @@
 from flask_socketio import SocketIO
-from ..reporter import Reporter
+from tex_timelapse.reporter import Reporter
 
 class WebReporter(Reporter):
     def __init__(self, socketio: SocketIO):

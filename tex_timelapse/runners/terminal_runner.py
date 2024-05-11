@@ -1,5 +1,5 @@
 from alive_progress import alive_bar
-from ..reporter import Reporter
+from tex_timelapse.reporter import Reporter
 
 class TerminalReporter(Reporter):
     def __init__(self):

@@ -1,6 +1,6 @@
-from .action import Action
-from ..project import Project
-from ..snapshot import Snapshot, SnapshotStatus
+from tex_timelapse.actions.action import Action
+from tex_timelapse.project import Project
+from tex_timelapse.snapshot import Snapshot, SnapshotStatus
 from shutil import rmtree, copytree
 
 

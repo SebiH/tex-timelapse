@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from ..project import Project
-from ..snapshot import Snapshot, SnapshotStatus
+from tex_timelapse.project import Project
+from tex_timelapse.snapshot import Snapshot, SnapshotStatus
 
 class Action(ABC):
     @abstractmethod

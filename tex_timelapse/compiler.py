@@ -4,11 +4,11 @@ import multiprocessing
 from typing import List
 from ffmpeg_progress_yield import FfmpegProgress
 
-from .project import Project
-from .reporter import Reporter
-from .snapshot import Snapshot, SnapshotStatus
-from .util.serialization import saveToFile
-from .actions.action import Action
+from tex_timelapse.project import Project
+from tex_timelapse.reporter import Reporter
+from tex_timelapse.snapshot import Snapshot, SnapshotStatus
+from tex_timelapse.util.serialization import saveToFile
+from tex_timelapse.actions.action import Action
 
 pool = ThreadPool(multiprocessing.cpu_count())
 

@@ -4,9 +4,9 @@ from typing import List
 import git
 from slugify import slugify
 
-from .config import Config
-from .snapshot import Snapshot, SnapshotStatus
-from .util.serialization import loadFromFile
+from tex_timelapse.config import Config
+from tex_timelapse.snapshot import Snapshot, SnapshotStatus
+from tex_timelapse.util.serialization import loadFromFile
 
 class Project:
     name: str
