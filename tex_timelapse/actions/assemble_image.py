@@ -38,14 +38,14 @@ class AssembleImageAction(Action):
     def cleanup(self) -> None:
         pass
 
-    def run(self, snapshot: Snapshot) -> SnapshotStatus:
+    def run(self, snapshot: Snapshot) -> str:
         workDir = snapshot.getWorkDir()
         rawImages = sorted(glob(f'{workDir}/images/page-*.png'))
 
         if self.blur > 0:
             images = [Image.open(i).filter(ImageFilter.GaussianBlur(self.blur)) for i in rawImages]
         else:
-            images = rawImages
+            images = [Image.open(i) for i in rawImages]
 
         if (len(images) == 0):
             raise Exception(f'No images found for {snapshot.commit_sha}')

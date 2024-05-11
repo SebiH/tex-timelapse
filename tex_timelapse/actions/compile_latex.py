@@ -16,7 +16,7 @@ class CompileLatexAction(Action):
     def cleanup(self) -> None:
         pass
 
-    def run(self, snapshot: Snapshot) -> SnapshotStatus:
+    def run(self, snapshot: Snapshot) -> str:
         workDir = snapshot.getWorkDir()
         texFile = snapshot.main_tex_file
         installCmd = f'texliveonfly {texFile}'
@@ -35,7 +35,8 @@ class CompileLatexAction(Action):
         #                      Number of removed / added lines (may be optional)
         #
         # The following code extracts these values and puts both removed and added lines into the changedLines array
-        for match in re.finditer(r'@@\s+-(\d+),?(\d*)\s+\+(\d+),?(\d*)\s+@@', snapshot.gitDiff):
+        gitDiffResults = re.finditer(r'@@\s+-(\d+),?(\d*)\s+\+(\d+),?(\d*)\s+@@', snapshot.gitDiff)
+        for match in gitDiffResults:
             for x in range(int(match.group(1)), int(match.group(1)) + int(match.group(2) if match.group(2) else 0) + 1):
                 changedLines.add(x)
             for x in range(int(match.group(3)), int(match.group(3)) + int(match.group(4) if match.group(4) else 0) + 1):
@@ -49,11 +50,10 @@ class CompileLatexAction(Action):
             synctexCmd = f'synctex view -i {line}:0:{os.path.abspath(workDir)}/./{texFile} -o {pdfFile}'
             output = snapshot.execute(synctexCmd, "latex")
 
-            try:
-                page = int(re.search(r"Page:(\d*)", output, flags=re.MULTILINE).group(1))
+            result = re.search(r"Page:(\d*)", output, flags=re.MULTILINE)
+            if (result):
+                page = int(result.group(1))
                 changedPages.add(page)
-            except:
-                pass
 
             # TODO: interpret this output correctly other than the page?
             # x = float(re.search(r"x:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
@@ -64,7 +64,7 @@ class CompileLatexAction(Action):
             # H = float(re.search(r"H:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
 
             # write pages back to file for later processing
-            snapshot.changed_pages = changedPages
+            snapshot.changed_pages = list(changedPages)
 
         return SnapshotStatus.COMPLETED
 

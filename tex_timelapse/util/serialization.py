@@ -7,7 +7,9 @@ def saveToFile(filePath: str, obj: object) -> bool:
 
         with open(filePath, 'w') as file:
             YAML().dump(obj.__dict__, file)
+            return True
+        return False
     
-def loadFromFile(path: str) -> object:
+def loadFromFile(path: str):
     with open(path, 'r') as file:
         return YAML().load(file)

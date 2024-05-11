@@ -1,4 +1,4 @@
-from alive_progress import alive_bar
+from alive_progress import alive_bar # type: ignore
 from tex_timelapse.reporter import Reporter
 
 class TerminalReporter(Reporter):

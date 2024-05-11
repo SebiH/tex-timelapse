@@ -13,7 +13,7 @@ class PdfToImageAction(Action):
     def cleanup(self) -> None:
         pass
 
-    def run(self, snapshot: Snapshot) -> SnapshotStatus:
+    def run(self, snapshot: Snapshot) -> str:
         os.makedirs(f'{snapshot.getWorkDir()}/images', exist_ok=True)
 
         pdfFile = snapshot.main_tex_file[:-4] + '.pdf'

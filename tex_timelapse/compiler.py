@@ -13,6 +13,8 @@ from tex_timelapse.actions.action import Action
 pool = ThreadPool(multiprocessing.cpu_count())
 
 def set_threads(threads: int):
+    global pool
+
     # dispose old pool
     pool.close()
     pool.join()
@@ -62,7 +64,7 @@ def compileSnapshot(project: Project, snapshot_sha: str, actions: List[Action], 
     # TODO: snapshot.status = SnapshotStatus.PENDING
     # TODO: snapshot.error = ''
 
-    prevAction = None
+    prevAction = ''
     for action in actions:
         if not canRun(prevAction, action, snapshot):
             break
@@ -79,7 +81,7 @@ def compileSnapshot(project: Project, snapshot_sha: str, actions: List[Action], 
 
 def compileProject(project: Project, output: str, actions: List[Action], reporter: Reporter):
 
-    prevAction = None
+    prevAction = ''
     for action in actions:
         action.init(project)
 

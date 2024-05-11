@@ -1,7 +1,7 @@
 import datetime
 from typing import  TypedDict
 
-class Config(TypedDict):
+class Config(TypedDict, total=False):
     sourceFolder: str
     mainTexFile: str
 
@@ -17,7 +17,6 @@ class Config(TypedDict):
     endCommit: str
     # startDate: datetime
     # endDate: datetime
-
 
     crop: bool
     cropTwoPage: bool
@@ -35,3 +34,6 @@ class Config(TypedDict):
 
     overleafProjectId: str
     overleafAuthToken: str
+
+    # Video settings
+    framerate: int

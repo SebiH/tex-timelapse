@@ -1,10 +1,11 @@
 pillow
+types-Pillow
 alive_progress
 ffmpeg-progress-yield
 gitpython
 numpy
 ruamel.yaml
 python-slugify
+types-python-slugify
 flask
 flask-socketio
-types-Pillow

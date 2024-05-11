@@ -16,7 +16,7 @@ class InitRepoAction(Action):
     def cleanup(self) -> None:
         pass
 
-    def run(self, snapshot: Snapshot) -> SnapshotStatus:
+    def run(self, snapshot: Snapshot) -> str:
         workDir = snapshot.getWorkDir()
         copytree(f'{snapshot.project_dir}/{self.sourceFolder}/.git', f'{workDir}/latex/.git', dirs_exist_ok=True)
         cmd = f'git reset --hard {snapshot.commit_sha}'

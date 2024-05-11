@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from tex_timelapse.project import Project
-from tex_timelapse.snapshot import Snapshot, SnapshotStatus
+from tex_timelapse.snapshot import Snapshot
 
 class Action(ABC):
     @abstractmethod
@@ -8,7 +8,7 @@ class Action(ABC):
         pass
 
     @abstractmethod
-    def run(self, snapshot: Snapshot) -> SnapshotStatus:
+    def run(self, snapshot: Snapshot) -> str:
         pass
 
     @abstractmethod

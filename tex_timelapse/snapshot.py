@@ -1,9 +1,9 @@
 from datetime import datetime
-from enum import Enum
 import subprocess
 import os
 
 class SnapshotStatus(object):
+    PENDING = "Pending"
     IN_PROGRESS = "In Progress"
     COMPLETED = "Completed"
     FAILED = "Failed"
@@ -12,8 +12,8 @@ class SnapshotStatus(object):
 class Snapshot:
     # for serialization
     # TODO: is there a better way to do this?
-    def __init__(self):
-        pass
+    # def __init__(self):
+    #     pass
 
     def __init__(self, project_dir: str, commit_sha: str, commit_date: datetime, main_tex_file: str):
         self.project_dir = project_dir
@@ -30,14 +30,14 @@ class Snapshot:
         #pdf_file: str
 
         #pages: list[str] = []
-        self.gitDiff: dict[str, str] = '' # file -> changedLines
+        self.gitDiff: str = '' # file -> changedLines
         self.changed_pages: list[int] = []
 
 
     def getWorkDir(self) -> str:
         return os.path.join(self.project_dir, 'snapshots', self.commit_sha)
 
-    def execute(self, cmd: str, sub_folder: str = None) -> str:
+    def execute(self, cmd: str, sub_folder: str = '') -> str:
         cwd = self.getWorkDir()
         if sub_folder is not None:
             cwd = os.path.join(cwd, sub_folder)

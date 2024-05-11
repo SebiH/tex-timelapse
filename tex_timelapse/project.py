@@ -5,7 +5,7 @@ import git
 from slugify import slugify
 
 from tex_timelapse.config import Config
-from tex_timelapse.snapshot import Snapshot, SnapshotStatus
+from tex_timelapse.snapshot import Snapshot
 from tex_timelapse.util.serialization import loadFromFile
 
 class Project:
@@ -16,7 +16,13 @@ class Project:
     def __init__(self, name: str):
         self.name = slugify(name);
         self.projectFolder = f'./projects/{self.name}'
-        self.config = loadFromFile(f'{self.projectFolder}/project.yaml')
+
+        default_values = {
+            'todo': 'todo',
+        }
+        full_config = {**default_values, **loadFromFile(f'{self.projectFolder}/project.yaml')}
+
+        self.config = Config(**full_config)
 
         self.snapshots: List[Snapshot] = []
         self.initSnapshots()
@@ -42,15 +48,10 @@ class Project:
         
         print(f"Added {missingCounter} missing snapshots")
 
-    def setStage(self, stage: int):
-        for snapshot in self.snapshots:
-            for job in self.jobs[stage-1:]:
-                snapshot.status[job.getName()] = SnapshotStatus.PENDING
 
 
-
-def list_projects() -> list[Project]:
+def list_projects() -> list[str]:
     return [
         os.path.dirname(file).removeprefix('projects/')
-        for file in glob(f'projects/**/project.yaml', recursive=True)
+        for file in glob('projects/**/project.yaml', recursive=True)
     ]
