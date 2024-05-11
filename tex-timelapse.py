@@ -6,10 +6,11 @@ import shutil
 
 from slugify import slugify
 
-from src.runners.terminal_runner import TerminalReporter
-from src.compiler import compileProject
-from src.project import Project, list_projects
-from src.webserver import WebServer
+from tex_timelapse.runners.terminal_runner import TerminalReporter
+from tex_timelapse.compiler import compileProject
+from tex_timelapse.project import Project, list_projects
+from tex_timelapse.snapshot import SnapshotStatus
+from tex_timelapse.webserver import WebServer
 
 
 ############################
@@ -26,6 +27,7 @@ subparsers.required = True
 # ------------
 initParser = subparsers.add_parser(
     'init', help='Initialize a new project')
+
 initParser.add_argument(
     'project',
     type=str,
@@ -36,7 +38,7 @@ initParser.add_argument(
 # -----------
 runParser = subparsers.add_parser(
     'run', help='Run a project')
-# add a required argument
+
 runParser.add_argument(
     'project',
     type=str,
@@ -82,20 +84,17 @@ def initProject(name: str):
 
     # output
     print(f"Project '{name}' successfully initialized in '{folder}'. Please edit the project.yaml file, then run:")
-    print(f"run...")
+    print(f"tex-timelapse run {name} <output>")
 
 
 def runProject(name: str, output: str, args):
     print(f"Running project '{name}'...")
     project = Project(name)
 
-    if args.stage is not None:
-        project.setStage(args.stage)
-
-    from src.actions.init_repo import InitRepoAction
-    from src.actions.compile_latex import CompileLatexAction
-    from src.actions.pdf_to_image import PdfToImageAction
-    from src.actions.assemble_image import AssembleImageAction
+    from tex_timelapse.actions.init_repo import InitRepoAction
+    from tex_timelapse.actions.compile_latex import CompileLatexAction
+    from tex_timelapse.actions.pdf_to_image import PdfToImageAction
+    from tex_timelapse.actions.assemble_image import AssembleImageAction
     jobs = [
         InitRepoAction(),
         CompileLatexAction(),
@@ -103,13 +102,23 @@ def runProject(name: str, output: str, args):
         AssembleImageAction()
     ]
 
+    if args.stage is not None:
+        foundStage = False
+
+        for job in jobs:
+            jobName = job.getName()
+            foundStage = jobName == args.stage
+            if foundStage:
+                for snapshot in project.snapshots:
+                    snapshot.status[jobName] = SnapshotStatus.PENDING
+
     compileProject(project, output, jobs, TerminalReporter())
 
 
 def listProjects():
     print("Available projects:")
     for project in list_projects():
-        print(f" - {project}");
+        print(f" - {project}")
 
 
 ############################

@@ -49,7 +49,6 @@ class Project:
         print(f"Added {missingCounter} missing snapshots")
 
 
-
 def list_projects() -> list[str]:
     return [
         os.path.dirname(file).removeprefix('projects/')

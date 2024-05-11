@@ -10,11 +10,6 @@ class SnapshotStatus(object):
 
 
 class Snapshot:
-    # for serialization
-    # TODO: is there a better way to do this?
-    # def __init__(self):
-    #     pass
-
     def __init__(self, project_dir: str, commit_sha: str, commit_date: datetime, main_tex_file: str):
         self.project_dir = project_dir
         self.commit_sha = commit_sha
