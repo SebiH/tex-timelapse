@@ -1,3 +1,4 @@
+import subprocess
 from tex_timelapse.actions.action import Action
 from tex_timelapse.project import Project
 from tex_timelapse.snapshot import Snapshot, SnapshotStatus
@@ -10,6 +11,11 @@ class InitRepoAction(Action):
 
     def init(self, project: Project) -> None:
         self.sourceFolder = f'{project.projectFolder}/source'
+        cmd = 'git gc --aggressive'
+
+        output = subprocess.run(cmd.split(), cwd=self.sourceFolder, capture_output=False, text=True)
+        if output.returncode != 0:
+            raise Exception(f"'{cmd}' failed with error: {output.stderr}")
         pass
 
     def cleanup(self) -> None:
