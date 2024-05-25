@@ -28,8 +28,6 @@ class CompileLatexAction(Action):
         # ignore errors in case it somehow still compiled
         snapshot.execute(compileCmd, "latex", True)
 
-        changedPages = set()
-
         # git format example: @@ -33,5 55,4 @@
         #                         ^  ^ ^  ^
         #                         |  | |  |
@@ -37,21 +35,47 @@ class CompileLatexAction(Action):
         #                            |    |
         #                      Number of removed / added lines (may be optional)
         #
+        changedFiles = {}
         for file, diff in snapshot.gitDiff.items():
-            changedLines = set()
+            changedFiles[file] = set()
 
             if file.endswith(".tex"):
                 # The following code extracts these values and puts both removed and added lines into the changedLines array
                 gitDiffResults = re.finditer(r'@@\s+-(\d+),?(\d*)\s+\+(\d+),?(\d*)\s+@@', diff)
                 for match in gitDiffResults:
                     for x in range(int(match.group(1)), int(match.group(1)) + int(match.group(2) if match.group(2) else 0) + 1):
-                        changedLines.add(x)
+                        changedFiles[file].add(x)
                     for x in range(int(match.group(3)), int(match.group(3)) + int(match.group(4) if match.group(4) else 0) + 1):
-                        changedLines.add(x)
+                        changedFiles[file].add(x)
             else:
-                # TODO changes for image files are currently unsupported
-                pass
+                # since we might've added a file ending (but \includegraphics doesn't have to have one), we'll remove it again.
+                # TODO: this assumes a file ending of 4 characters, which is not always the case
+                basefile = file[:-4]
+                if basefile.startswith("./"):
+                    basefile = basefile[2:]
 
+                # assuming it's an image file, all \includegraphics{...} lines are considered changed
+                # TODO: potential issues:
+                # - does not work if filename has a space in it -> execute should use array instead of string
+                # - \includegraphics could be commented out
+                # - \includegraphics could be split over multiple lines
+                # - \includegraphics could be in in a macro
+                # - we need to consider \graphicspath{...}
+                occurrences = snapshot.execute(f'grep -rn \\\\includegraphics.*{basefile} .', 'latex', True)
+
+                # this returns something like "file.tex:123:\includegraphics{file}"
+                # -> we only need the line number and the file name
+                for occurrence in occurrences.splitlines():
+                    file = occurrence.split(":")[0]
+                    line = int(occurrence.split(":")[1])
+                    if changedFiles.get(file) is None:
+                        changedFiles[file] = set()
+
+                    changedFiles[file].add(line)
+
+
+        changedPages = set()
+        for file, changedLines in changedFiles.items():
             # convert the git changed lines to pages using synctex
             pdfFile = texFile[:-4] + ".pdf"
             for line in changedLines:
