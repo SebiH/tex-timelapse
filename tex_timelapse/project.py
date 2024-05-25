@@ -43,7 +43,7 @@ class Project:
         for commit in list(repo.iter_commits()):
             if commit.hexsha not in [snapshot.commit_sha for snapshot in self.snapshots]:
                 missingCounter += 1
-                sDict = Snapshot(self.projectFolder, commit.hexsha, commit.authored_date, self.config['mainTexFile'])
+                sDict = Snapshot(self.projectFolder, commit.hexsha, commit.authored_date)
                 self.snapshots.append(sDict)
         
         print(f"Added {missingCounter} missing snapshots")

@@ -1,7 +1,4 @@
 # TODO: add comments
-mainTexFile: main.tex
-
-# TODO: add comments
 rows: 3
 columns: 6
 framerate: 8

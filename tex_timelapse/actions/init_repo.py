@@ -27,6 +27,7 @@ class InitRepoAction(Action):
         cmd = f'git reset --hard {snapshot.commit_sha}'
         snapshot.execute(cmd, "latex")
 
+        snapshot.main_tex_file = self.findMainTexFile(snapshot)
         # TODO: find main .tex file
         # TODO: find all included files
 
@@ -37,3 +38,14 @@ class InitRepoAction(Action):
         # save space
         rmtree(f'{workDir}/latex/.git')
         return SnapshotStatus.COMPLETED
+
+
+    def findMainTexFile(self, snapshot: Snapshot) -> str:
+        result = snapshot.execute('find . -name *.tex -exec grep -l \\\\begin{document} {} +', 'latex')
+        if result == "":
+            raise Exception("Could not find main .tex file")
+
+        # use the first line as result
+        result = result.splitlines()[0]
+
+        return result.strip()

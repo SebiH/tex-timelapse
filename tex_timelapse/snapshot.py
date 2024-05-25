@@ -10,11 +10,11 @@ class SnapshotStatus(object):
 
 
 class Snapshot:
-    def __init__(self, project_dir: str, commit_sha: str, commit_date: datetime, main_tex_file: str):
+    def __init__(self, project_dir: str, commit_sha: str, commit_date: datetime):
         self.project_dir = project_dir
         self.commit_sha = commit_sha
         self.commit_date = commit_date
-        self.main_tex_file = main_tex_file
+        self.main_tex_file = '' # will be set by InitRepoAction
 
         self.status: dict[str, str] = {}
         self.error = ''
