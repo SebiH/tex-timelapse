@@ -21,7 +21,7 @@ class Snapshot:
         self.includes: list[str] = []
         #pdf_file: str
 
-        #pages: list[str] = []
+        self.pages: list[str] = []
         self.gitDiff: dict = {} # file -> changedLines
         self.changed_pages: list[int] = []
 
@@ -50,5 +50,6 @@ class Snapshot:
             'error': self.error,
             'includes': list(self.includes),
             'gitDiff': self.gitDiff,
+            'pages': self.pages,
             'changed_pages': list(self.changed_pages)
         }

@@ -52,7 +52,7 @@ def canRun(prevAction: str, action: Action, snapshot: Snapshot) -> bool:
     return True
 
 
-def compileSnapshot(project: Project, snapshot_sha: str, actions: List[Action], reporter: Reporter):
+def compileSnapshot(project: Project, snapshot_sha: str, actions: List[Action], reporter: Reporter) -> Snapshot:
     matching_snapshot = [s for s in project.snapshots if s.commit_sha == snapshot_sha]
 
     if len(matching_snapshot) == 0:
@@ -77,6 +77,8 @@ def compileSnapshot(project: Project, snapshot_sha: str, actions: List[Action], 
         runAction(action, snapshot, reporter)
         action.cleanup()
         prevAction = action.getName()
+    
+    return snapshot
 
 
 def compileProject(project: Project, output: str, actions: List[Action], reporter: Reporter):
@@ -85,8 +87,9 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
     for action in actions:
         action.init(project)
 
-        reporter.set_stage(action.getName(), len(project.snapshots))
         snapshots = [s for s in project.snapshots if canRun(prevAction, action, s)]
+        reporter.set_stage(action.getName(), len(snapshots))
+
         # pool.map(lambda snapshot: runAction(action, snapshot, reporter), snapshots)
         for snapshot in snapshots:
             runAction(action, snapshot, reporter)

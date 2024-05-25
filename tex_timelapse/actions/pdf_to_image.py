@@ -20,4 +20,10 @@ class PdfToImageAction(Action):
         cmd = f'pdftoppm -png latex/{pdfFile} images/page'
         snapshot.execute(cmd)
 
+        # save pages for use in the webserver
+        images = snapshot.execute('find .', 'images', ignore_error=True)
+        
+        # since files are prefixed with ./, we remove the first two characters
+        snapshot.pages = [f[2:] for f in images.split('\n') if f.endswith('.png')]
+
         return SnapshotStatus.COMPLETED

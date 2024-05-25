@@ -8,6 +8,14 @@
             "program": "${workspaceFolder}/tex-timelapse.py",
             "args": ["run", "sample", "sample"],
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: Tex-Timelapse Server",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/tex-timelapse.py",
+            "args": ["server"],
+            "console": "integratedTerminal"
         }
     ]
 }

@@ -5,5 +5,6 @@ export type TimelapseSnapshot = {
     'error': string;
     'includes': number[],
     'gitDiff': string,
-    'changed_pages': number[]
+    'changed_pages': number[],
+    'pages': []
 }

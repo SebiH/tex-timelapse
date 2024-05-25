@@ -37,19 +37,26 @@ const Project = () => {
 
     let commitPages = <></>;
     if (selectedCommit && selectedCommit.status['PDF to Image'] === 'Completed') {
-        const a = [1, 2, 3, 4, 5];
-        const pages = a.map(n => `/api/projects/test/snapshot/${selectedCommit.commit_sha}/image/page-0${n}.png`);
+        const pages = selectedCommit.pages.map(p => `/api/projects/sample/snapshot/${selectedCommit.commit_sha}/image/${p}`);
 
         commitPages = <div className='imgContainer'>
             { pages.map(p => <img src={p} alt='page' key={p} />) }
         </div>;
     }
 
+    let snapshotStatus = <></>;
+    if (selectedCommit) {
+        snapshotStatus = <div>
+            <code><pre>{ JSON.stringify(selectedCommit, null, 4) }</pre></code>
+        </div>;
+    }
+
+
     let pdfPreview = <></>;
 
     if (selectedCommit && selectedCommit.status['Compile LaTeX'] === 'Completed') {
         pdfPreview = <div className='pdfPreview'>
-            <embed src={ `http://localhost:5000/api/projects/test/snapshot/${selectedCommit.commit_sha}/pdf` } width="500" height="375" type="application/pdf"></embed>
+            <embed src={ `http://localhost:5000/api/projects/sample/snapshot/${selectedCommit.commit_sha}/pdf` } width="500" height="375" type="application/pdf"></embed>
         </div>;
     }
 
@@ -62,16 +69,22 @@ const Project = () => {
     }
 
     const runSnapshot = async () => {
-        const request = await fetch(`/api/projects/${project.name}/snapshot/${selectedCommit?.commit_sha}/run`);
+        if (!selectedCommit) {
+            alert('Please select a snapshot first.');
+            return;
+        }
+
+        const request = await fetch(`/api/projects/${project.name}/snapshot/${selectedCommit.commit_sha}/run`);
         const response = await request.json();
 
         if (response.error) {
             console.warn(response.error);
-        } else if (selectedCommit) {
-            selectedCommit.status = {
-                'PDF to Image': 'Completed',
-                'Compile LaTeX': 'Completed'
-            };
+        } else {
+            project.snapshots = [
+                ...project.snapshots.filter(s => s.commit_sha !== selectedCommit.commit_sha),
+                response.snapshot
+            ];
+            setSelectedCommit(response.snapshot);
         }
     };
 
@@ -103,6 +116,7 @@ const Project = () => {
             {commitPages}
             {pdfPreview}
             {errorMessages}
+            {snapshotStatus}
         </div>
     );
 };

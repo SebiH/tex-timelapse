@@ -46,8 +46,8 @@ class WebServer:
             print(request.form)
             return list_projects()
 
-        @self.app.route('/api/projects/<name>/snapshot/<snapshot>/run')
-        def compileSnapshotX(name, snapshot):
+        @self.app.route('/api/projects/<name>/snapshot/<snapshot_sha>/run')
+        def __compileSnapshot(name, snapshot_sha):
             project = localProjects[name]
             try:
                 from .actions.init_repo import InitRepoAction
@@ -61,8 +61,8 @@ class WebServer:
                     AssembleImageAction()
                 ]
 
-                compileSnapshot(project, snapshot, jobs, WebReporter(self.socketio))
-                return { 'success': True }
+                snapshot = compileSnapshot(project, snapshot_sha, jobs, WebReporter(self.socketio))
+                return { 'success': True, 'snapshot': snapshot.to_dict() }
             except Exception as e:
                 return { 'success': False, 'error': str(e) }
 
