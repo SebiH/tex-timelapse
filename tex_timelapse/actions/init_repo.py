@@ -28,12 +28,14 @@ class InitRepoAction(Action):
         snapshot.execute(cmd, "latex")
 
         snapshot.main_tex_file = self.findMainTexFile(snapshot)
-        # TODO: find main .tex file
-        # TODO: find all included files
+        snapshot.includes = self.findIncludedFiles(snapshot)
 
-        # TODO: for each, check if there are any changes
-        diffCmd = f'git diff --unified=0 HEAD HEAD~1 {snapshot.main_tex_file}'
-        snapshot.gitDiff = snapshot.execute(diffCmd, "latex")
+        # check for any changes to highlight them in the final output
+        for file in snapshot.includes:
+            diffCmd = f'git diff --unified=0 HEAD HEAD~1 {file}'
+            diffOutput = snapshot.execute(diffCmd, "latex", True)
+            if diffOutput != "":
+                snapshot.gitDiff[file] = diffOutput
 
         # save space
         rmtree(f'{workDir}/latex/.git')
@@ -49,3 +51,54 @@ class InitRepoAction(Action):
         result = result.splitlines()[0]
 
         return result.strip()
+
+
+
+    # TODO: consider more commands, e.g. \bibliography{...}, \addbibresource{...}, \lstinputlisting{...}
+    def findIncludedFiles(self, snapshot: Snapshot) -> list[str]:
+        included_files = [ snapshot.main_tex_file ]
+        unscanned_files = [ snapshot.main_tex_file ]
+
+        while len(unscanned_files) > 0:
+            new_files = []
+
+            resultInclude = snapshot.execute('grep -r \\\\include{ ' + unscanned_files[0], 'latex', True)
+            for line in resultInclude.splitlines():
+                # extract file name
+                file = line.split('{')[1].split('}')[0]
+                if not file.endswith('.tex'):
+                    file += '.tex'
+                new_files.append(file.strip())
+
+            resultInput = snapshot.execute('grep -r \\\\input{ ' + unscanned_files[0], 'latex', True)
+            for line in resultInput.splitlines():
+                # extract file name
+                file = line.split('{')[1].split('}')[0]
+                if not file.endswith('.tex'):
+                    file += '.tex'
+                new_files.append(file.strip())
+
+            resultGraphics = snapshot.execute('grep -r \\\\includegraphics ' + unscanned_files[0], 'latex', True)
+            for line in resultGraphics.splitlines():
+                # extract file name
+                file = line.split('{')[1].split('}')[0]
+
+                # for images, we might need to add the extension
+                has_extension = file.find('.') != -1
+                if has_extension:
+                    new_files.append(file.strip())
+                else:
+                    possible_files = snapshot.execute(f'find . -wholename *{file}.*', 'latex')
+                    for pf in possible_files.splitlines():
+                        new_files.append(pf.strip())
+
+            for file in new_files:
+                if file not in included_files:
+                    included_files.append(file)
+
+                    if file.endswith('.tex'):
+                        unscanned_files.append(file)
+
+            unscanned_files.remove(unscanned_files[0])
+        
+        return included_files

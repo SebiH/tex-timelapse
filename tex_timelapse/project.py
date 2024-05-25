@@ -32,7 +32,7 @@ class Project:
         for file in glob(f'{self.projectFolder}/snapshots/**/snapshot.yaml'):
             sDict = loadFromFile(file)
             if sDict:
-                snapshot = Snapshot("", "", None, "")
+                snapshot = Snapshot("", "", None)
                 snapshot.__dict__ = sDict # TODO: is there a better way to do this?
                 self.snapshots.append(snapshot)
         print(f"Loaded {len(self.snapshots)} existing snapshots")
