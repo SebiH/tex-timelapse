@@ -5,8 +5,16 @@ import {
     AlertDescription,
     AlertTitle,
 } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import { Slider } from '@/components/ui/slider';
+import { AlertCircle, Settings } from 'lucide-react';
 import './snapshot-pages.scss';
+import { Button } from '@/components/ui/button';
+import { useState } from 'react';
 
 export interface SnapshotPagesProps {
     project: TimelapseProject,
@@ -14,6 +22,8 @@ export interface SnapshotPagesProps {
 }
 
 export const SnapshotPages = (props: SnapshotPagesProps) => {
+    const [ pageWidth, setPageWidth ] = useState([400]);
+
     const status = props.snapshot.status;
     if (status && status['PDF to Image'] === 'Completed') {
 
@@ -21,8 +31,8 @@ export const SnapshotPages = (props: SnapshotPagesProps) => {
             const pageChanged = (props.snapshot.changed_pages.includes(index + 1));
 
             return (
-                <div className='snapshot-page-preview' key={page}>
-                    {pageChanged && <div className='snapshot-page-changed' />}                   
+                <div className='snapshot-page-preview' key={page} style={{ 'width': `${pageWidth}px` }}>
+                    {pageChanged && <div className='snapshot-page-changed' />}
 
                     <img src={`/api/projects/${props.project.name}/snapshot/${props.snapshot.commit_sha}/image/${page}`}
                         className='max-w-full'
@@ -37,6 +47,28 @@ export const SnapshotPages = (props: SnapshotPagesProps) => {
             <div className='w-full snapshot-pages-container'>
                 {images}
             </div>
+
+            <Popover>
+                <PopoverTrigger asChild>
+                    <Button variant="outline" className='absolute right-2 top-2'>
+                        <Settings />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80">
+                    <div className="grid gap-4">
+                        <div className="space-y-2">
+                            <h4 className="font-medium leading-none">Preview Page Size</h4>
+                        </div>
+                        <div className="grid gap-2">
+                            <Slider step={1} value={pageWidth} min={50} max={1000} onValueChange={setPageWidth.bind(this)} />
+                            <p className="text-sm text-muted-foreground">
+                                Set the dimensions for the layer.
+                            </p>
+                        </div>
+                    </div>
+                </PopoverContent>
+            </Popover>
+
         </div>;
 
     } else {

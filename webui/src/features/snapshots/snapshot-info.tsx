@@ -74,7 +74,6 @@ export const SnapshotInfo = (props: SnapshotInfoProps) => {
 
         <Button variant='default' className='w-full' onClick={compileSnapshot.bind(this)}>
             <BugPlay className='w-4 h-4 m-1' />
-
             Render Snapshot
         </Button>
 
