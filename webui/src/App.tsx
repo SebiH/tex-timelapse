@@ -1,8 +1,9 @@
 import './App.scss';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Root from './pages/Root';
-import Project, { loader as projectLoader } from './pages/Project';
 import ProjectList, { loader as projectListLoader } from './pages/ProjectList';
+import { TooltipProvider } from '@radix-ui/react-tooltip';
+import Project, { loader as projectLoader } from './pages/Project';
 
 const router = createBrowserRouter([
     {
@@ -27,8 +28,10 @@ const router = createBrowserRouter([
 
 const App = () => {
     return (
-        <div className="App">
-            <RouterProvider router={router} />
+        <div className="App bg-muted/40">
+            <TooltipProvider>
+                <RouterProvider router={router} />
+            </TooltipProvider>
         </div>
     );
 };

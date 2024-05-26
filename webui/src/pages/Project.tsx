@@ -1,122 +1,64 @@
-import { LoaderFunctionArgs, useLoaderData } from 'react-router-dom';
-import SnapshotSlider from '../features/snapshot-slider/snapshot-slider';
-import { useEffect, useState } from 'react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Home, } from 'lucide-react';
 
-import './Project.scss';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCube, faCubes } from '@fortawesome/free-solid-svg-icons';
-import { TimelapseProject } from '../models/project';
-import { TimelapseSnapshot } from '../models/snapshot';
-import { socket } from '../socketio';
+import { Button } from '@/components/ui/button';
+import { Link, LoaderFunctionArgs, useLoaderData } from 'react-router-dom';
+import { TimelapseProject } from '@/models/project';
+import { useState } from 'react';
+import { TimelapseView } from './TimelapseView';
+import { VideoView } from './VideoView';
+import { SnapshotView } from './SnapshotView';
+
 
 export async function loader({ params }: LoaderFunctionArgs<{ projectName: string }>) {
     return await fetch(`/api/projects/${params.projectName}`);
 }
 
+
 const Project = () => {
     const project = useLoaderData() as TimelapseProject;
+    const [view, setView] = useState('timelapse');
 
-    useEffect(() => {
-        const onData = (data: any) => {
-            console.log(data);
-        };
-        socket.on('log', onData);
-
-        return () => {
-            socket.off('log', onData);
-        };
-    }, []);
-
-    if (!project) {
-        return <div>Loading... / Show new project site</div>;
+    let currentView = <TimelapseView project={project} />;
+    if (view === 'snapshots') {
+        currentView = <SnapshotView project={project} />;
+    } else if (view === 'videos') {
+        currentView = <VideoView project={project} />;
     }
 
-    const [ selectedCommit, setSelectedCommit ] = useState<TimelapseSnapshot | null>(null);
-
-    console.log(selectedCommit);
-
-    let commitPages = <></>;
-    if (selectedCommit && selectedCommit.status['PDF to Image'] === 'Completed') {
-        const pages = selectedCommit.pages.map(p => `/api/projects/sample/snapshot/${selectedCommit.commit_sha}/image/${p}`);
-
-        commitPages = <div className='imgContainer'>
-            { pages.map(p => <img src={p} alt='page' key={p} />) }
-        </div>;
-    }
-
-    let snapshotStatus = <></>;
-    if (selectedCommit) {
-        snapshotStatus = <div>
-            <code><pre>{ JSON.stringify(selectedCommit, null, 4) }</pre></code>
-        </div>;
-    }
-
-
-    let pdfPreview = <></>;
-
-    if (selectedCommit && selectedCommit.status['Compile LaTeX'] === 'Completed') {
-        pdfPreview = <div className='pdfPreview'>
-            <embed src={ `http://localhost:5000/api/projects/sample/snapshot/${selectedCommit.commit_sha}/pdf` } width="500" height="375" type="application/pdf"></embed>
-        </div>;
-    }
-
-    let errorMessages = <></>;
-
-    if (selectedCommit && selectedCommit.error) {
-        errorMessages = <div className='errorMessages'>
-            { selectedCommit.error }
-        </div>;
-    }
-
-    const runSnapshot = async () => {
-        if (!selectedCommit) {
-            alert('Please select a snapshot first.');
-            return;
-        }
-
-        const request = await fetch(`/api/projects/${project.name}/snapshot/${selectedCommit.commit_sha}/run`);
-        const response = await request.json();
-
-        if (response.error) {
-            console.warn(response.error);
-        } else {
-            project.snapshots = [
-                ...project.snapshots.filter(s => s.commit_sha !== selectedCommit.commit_sha),
-                response.snapshot
-            ];
-            setSelectedCommit(response.snapshot);
-        }
-    };
 
     return (
-        <div>
-            <div className='main-btn'>
-                <div className='btn-icon'>
-                    <FontAwesomeIcon icon={faCubes} />
-                </div>
-                <div className='btn-content'>
-                    Run
-                </div>
+        <div className='grid h-screen w-full'>
+
+            <div className='flex flex-col'>
+                <header className='sticky top-0 z-10 flex flex-row justify-between h-[57px] items-center gap-1 border-b bg-background'>
+                    <div className='flex flex-row items-center'>
+                        <div className='border-b p-2'>
+                            <Link to='/'>
+                                <Button variant='outline' size='icon' aria-label='Home'>
+                                    <Home className='size-5' />
+                                </Button>
+                            </Link>
+                        </div>
+
+                        <h1 className='text-xl font-semibold'>
+                            Tex Timelapse Project: { project.name }
+                        </h1>
+
+                    </div>
+
+                    <Tabs defaultValue='timelapse' className='p-2' value={view} onValueChange={setView.bind(this)}>
+                        <TabsList>
+                            <TabsTrigger value='timelapse'>Timelapse</TabsTrigger>
+                            <TabsTrigger value='snapshots'>Snapshots</TabsTrigger>
+                            <TabsTrigger value='videos'>Videos</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+
+                </header>
+            
+                {currentView}
             </div>
-
-            <div className='main-btn' onClick={runSnapshot.bind(this)}>
-                <div className='btn-icon'>
-                    <FontAwesomeIcon icon={faCube} />
-                </div>
-                <div className='btn-content'>
-                    Compile this snapshot
-                </div>
-            </div>
-
-            <br/>
-            <hr/>
-
-            <SnapshotSlider snapshots={project.snapshots} onSelect={setSelectedCommit} />
-
-            {commitPages}
-            {pdfPreview}
-            {errorMessages}
-            {snapshotStatus}
         </div>
     );
 };

@@ -3,6 +3,7 @@ import { Link, useLoaderData } from 'react-router-dom';
 import './ProjectList.scss';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlusCircle, faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
+import { Button } from '@/components/ui/button';
 
 export async function loader() {
     return await fetch('/api/projects');
@@ -15,8 +16,8 @@ const ProjectList = () => {
         <div className='centered-container'>
 
             <div className="header">
-                <h1>TeX Timelapse</h1>
-                <h2>Projects</h2>
+                <h1 className='text-3xl font-bold'>TeX Timelapse</h1>
+                <h2 className='text-2xl font-semibold'>Projects</h2>
             </div>
 
             <div className='project-list'>
@@ -31,15 +32,12 @@ const ProjectList = () => {
                 ))}
 
                 <div className='centered-container'>
-                    <Link to='/projects/new' className='main-btn'>
-                        <div className='btn-icon'>
-                            <FontAwesomeIcon icon={faPlusCircle} />
-                        </div>
-
-                        <div className='btn-content'>
-                            Create New Project
-                        </div>
-                    </Link>
+                    {/* <Link to='/projects/new'> */}
+                        <Button disabled>
+                            <FontAwesomeIcon icon={faPlusCircle} className="mr-2 h-4 w-4" />
+                            Create New Project (coming soon)
+                        </Button>
+                    {/* </Link> */}
                 </div>
             </div>
         </div>
