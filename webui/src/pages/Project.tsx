@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { TimelapseView } from './TimelapseView';
 import { VideoView } from './VideoView';
 import { SnapshotView } from './SnapshotView';
+import { UIState } from '@/models/ui-state';
 
 
 export async function loader({ params }: LoaderFunctionArgs<{ projectName: string }>) {
@@ -17,6 +18,8 @@ export async function loader({ params }: LoaderFunctionArgs<{ projectName: strin
 
 const Project = () => {
     const project = useLoaderData() as TimelapseProject;
+    UIState.setProject(project);
+
     const [view, setView] = useState('timelapse');
 
     let currentView = <TimelapseView project={project} />;

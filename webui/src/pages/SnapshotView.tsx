@@ -5,7 +5,8 @@ import './SnapshotView.scss';
 import { SnapshotPages } from '@/features/snapshots/snapshot-pages';
 import { SnapshotSlider } from '@/features/snapshots/snapshot-slider';
 import { SnapshotInfo } from '@/features/snapshots/snapshot-info';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { UIState } from '@/models/ui-state';
 
 export interface SnapshotViewProps {
     project: TimelapseProject
@@ -13,6 +14,11 @@ export interface SnapshotViewProps {
 
 export const SnapshotView = (props: SnapshotViewProps) => {
     const [ snapshot, setSnapshot ] = useState(props.project.snapshots[0]);
+
+    useEffect(() => {
+        const sub = UIState.currentSnapshot.subscribe(s => s && setSnapshot(s));
+        return () => sub.unsubscribe();
+    }, []);
 
     return <main className='grid flex-1 gap-4 overflow-auto p-4 snapshot-view-grid'>
 

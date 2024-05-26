@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './snapshot-slider.scss';
 import { TimelapseSnapshot } from '../../models/snapshot';
+import { UIState } from '@/models/ui-state';
 
 type Props = {
     snapshots: TimelapseSnapshot[];
@@ -13,6 +14,16 @@ export const SnapshotSlider = ({ snapshots, onSelect }: Props) => {
     const [isDragging, setIsDragging] = useState(false);
 
     const sliderRef = useRef(null);
+
+    useEffect(() => {
+        const sub = UIState.currentSnapshot.subscribe(snapshot => {
+            if (snapshot) {
+                const pos = getPosition(snapshot.commit_date);
+                setStart(pos);
+            }
+        });
+        return () => sub.unsubscribe();
+    }, []);
 
     const min = snapshots.map(s => s.commit_date).reduce((a, b) => Math.min(a, b));
     const max = snapshots.map(s => s.commit_date).reduce((a, b) => Math.max(a, b));
@@ -65,7 +76,7 @@ export const SnapshotSlider = ({ snapshots, onSelect }: Props) => {
                     setPosition(closestDistance);
 
                 if (closestSnapshot)
-                    onSelect(closestSnapshot);
+                    UIState.setCurrentSnapshot(closestSnapshot.commit_sha);
 
 
                 setIsDragging(false);

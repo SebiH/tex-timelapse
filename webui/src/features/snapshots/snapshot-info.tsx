@@ -5,6 +5,8 @@ import { BugPlay } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { TimelapseSnapshot } from '@/models/snapshot';
 import { TimelapseProject } from '@/models/project';
+import { UIState } from '@/models/ui-state';
+import { ToastAction } from '@radix-ui/react-toast';
 
 export interface SnapshotInfoProps {
     project: TimelapseProject,
@@ -15,22 +17,20 @@ export const SnapshotInfo = (props: SnapshotInfoProps) => {
     const { toast } = useToast();
 
     const compileSnapshot = async () => {
-        const commit_sha = props.snapshot.commit_sha;
-        const request = await fetch(`/api/projects/${props.project.name}/snapshot/${commit_sha}/run`);
-        const response = await request.json();
+        const commitSha = props.snapshot.commit_sha;
+        const success = await UIState.compileSnapshot(commitSha);
 
-        // TODO: show toast with response
-        if (response.success) {
+        if (success) {
             toast({
                 title: 'Success!',
                 description: 'Snapshot compiled successfully',
-                // action: <ToastAction altText="View">Go to snapshot</ToastAction>,
+                action: <ToastAction altText="View" onClick={() => UIState.setCurrentSnapshot(commitSha)}>Go to snapshot</ToastAction>,
             });
         } else {
             toast({
                 title: 'Error',
                 description: 'Snapshot could not be compiled',
-                // action: <ToastAction altText="View">Go to snapshot</ToastAction>,
+                action: <ToastAction altText="View" onClick={() => UIState.setCurrentSnapshot(commitSha)}>Go to snapshot</ToastAction>,
             });
         }
     };
