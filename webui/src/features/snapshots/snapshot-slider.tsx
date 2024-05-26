@@ -7,7 +7,7 @@ type Props = {
     onSelect: (snapshot: TimelapseSnapshot) => void;
 }
 
-const SnapshotSlider = ({ snapshots, onSelect }: Props) => {
+export const SnapshotSlider = ({ snapshots, onSelect }: Props) => {
     const [startCommit, setStart] = useState(0);
     const [endCommit, setEnd] = useState(100);
     const [isDragging, setIsDragging] = useState(false);
@@ -94,5 +94,3 @@ const SnapshotSlider = ({ snapshots, onSelect }: Props) => {
         </div>
     </div>;
 };
-
-export default SnapshotSlider;

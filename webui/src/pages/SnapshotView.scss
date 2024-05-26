@@ -1,0 +1,6 @@
+.snapshot-view-grid {
+    display: grid;
+    grid-template-columns: [config] 400px [main] 1fr;
+    grid-template-rows: auto 200px;
+    grid-gap: 1rem;
+}
