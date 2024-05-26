@@ -21,13 +21,12 @@ export const SnapshotView = (props: SnapshotViewProps) => {
         </div>
 
 
-        <div className='relative flex h-full min-h-[50vh] flex-col rounded-xl bg-muted/50 p-4 w-full'>
+        <div className='relative flex h-full min-h-[50vh] flex-col rounded-xl bg-muted/50 p-4 w-full overflow-y-auto max-h-full'>
+            <SnapshotPages project={props.project} snapshot={snapshot} />
 
-            <Badge variant='outline' className='absolute right-3 top-3'>
+            <Badge variant='outline' className='absolute left-3 top-3 bg-white'>
                 Snapshot Preview
             </Badge>
-
-            <SnapshotPages />
         </div>
 
         <div className='relative hidden flex-col items-start gap-8 md:flex col-span-2'>

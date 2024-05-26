@@ -1,0 +1,19 @@
+.snapshot-pages-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.snapshot-page-preview {
+    width: 300px;
+    position: relative;
+}
+
+.snapshot-page-changed {
+    position: absolute;
+    background-color: #A3BE8C;
+    opacity: 0.5;
+    width: 100%;
+    height: 100%;
+}
+

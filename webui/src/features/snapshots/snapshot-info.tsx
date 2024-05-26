@@ -45,17 +45,20 @@ export const SnapshotInfo = (props: SnapshotInfoProps) => {
                 </legend>
 
                 <div className='grid gap-3'>
-                    <Label htmlFor='temperature'>Date</Label>
+                    <Label>Date</Label>
                     <Input disabled value={new Date(props.snapshot.commit_date * 1000).toUTCString()} />
 
-                    <Label htmlFor='temperature'>SHA</Label>
+                    <Label>SHA</Label>
                     <Input disabled value={props.snapshot.commit_sha} />
 
-                    <Label htmlFor='temperature'>Status</Label>
+                    <Label>Status</Label>
                     <pre><code>{ JSON.stringify(props.snapshot.status, null, 2) }</code></pre>
 
-                    <Label htmlFor='temperature'>Includes</Label>
+                    <Label>Includes</Label>
                     <pre><code>{ JSON.stringify(props.snapshot.includes, null, 2) }</code></pre>
+
+                    <Label>Changed Pages</Label>
+                    <pre><code>{ JSON.stringify(props.snapshot.changed_pages, null, 2) }</code></pre>
                 </div>
             </fieldset>
 

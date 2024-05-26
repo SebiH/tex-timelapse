@@ -28,9 +28,9 @@ const Project = () => {
 
 
     return (
-        <div className='grid h-screen w-full'>
+        <div className='h-screen w-full'>
 
-            <div className='flex flex-col'>
+            <div className='flex flex-col h-full'>
                 <header className='sticky top-0 z-10 flex flex-row justify-between h-[57px] items-center gap-1 border-b bg-background'>
                     <div className='flex flex-row items-center'>
                         <div className='border-b p-2'>
