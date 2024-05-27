@@ -3,6 +3,7 @@ import os
 from flask import Flask, send_file
 from flask import request
 from flask_socketio import SocketIO
+from flask_cors import CORS
 
 from tex_timelapse.reporters.web_reporter import WebReporter
 from tex_timelapse.compiler import compileSnapshot
@@ -11,7 +12,9 @@ from tex_timelapse.project import Project, list_projects
 class WebServer:
     def __init__(self):
         self.app = Flask(__name__)
-        self.socketio = SocketIO(self.app)
+
+        CORS(self.app, resources={r"/*": {"origins": "*"}})
+        self.socketio = SocketIO(self.app, cors_allowed_origins='*')
 
         webProjects = {}
         localProjects: dict[str, Project] = {}
@@ -62,6 +65,7 @@ class WebServer:
                 ]
 
                 snapshot = compileSnapshot(project, snapshot_sha, jobs, WebReporter(self.socketio))
+                self.socketio.emit('log', snapshot.to_dict())
                 return { 'success': True, 'snapshot': snapshot.to_dict() }
             except Exception as e:
                 return { 'success': False, 'error': str(e) }
