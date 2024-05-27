@@ -4,7 +4,7 @@ from flask import Flask, send_file
 from flask import request
 from flask_socketio import SocketIO
 
-from tex_timelapse.runners.web_runner import WebReporter
+from tex_timelapse.reporters.web_reporter import WebReporter
 from tex_timelapse.compiler import compileSnapshot
 from tex_timelapse.project import Project, list_projects
 

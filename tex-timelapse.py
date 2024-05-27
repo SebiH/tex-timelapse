@@ -6,7 +6,7 @@ import shutil
 
 from slugify import slugify
 
-from tex_timelapse.runners.terminal_runner import TerminalReporter
+from tex_timelapse.reporters.terminal_reporter import TerminalReporter
 from tex_timelapse.compiler import compileProject
 from tex_timelapse.project import Project, list_projects
 from tex_timelapse.snapshot import SnapshotStatus
