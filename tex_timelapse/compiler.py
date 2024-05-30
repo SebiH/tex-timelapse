@@ -54,7 +54,7 @@ def compileSnapshot(project: Project, snapshot_sha: str, actions: List[Action], 
     prevAction = ''
     for action in actions:
         if not canRun(prevAction, action, snapshot):
-            break
+            continue
 
         snapshot.error = ''
         action.init(project)

@@ -14,10 +14,14 @@ export interface SnapshotViewProps {
 
 export const SnapshotView = (props: SnapshotViewProps) => {
     const [ snapshot, setSnapshot ] = useState(props.project.snapshots[0]);
+    const [ snapshots, setSnapshots ] = useState(props.project.snapshots);
 
     useEffect(() => {
-        const sub = UIState.currentSnapshot.subscribe(s => s && setSnapshot(s));
-        return () => sub.unsubscribe();
+        const subs = [
+            UIState.currentSnapshot.subscribe(s => s && setSnapshot(s)),
+            UIState.project.subscribe(p => p && setSnapshots(p.snapshots))
+        ];
+        return () => subs.forEach(s => s.unsubscribe());
     }, []);
 
     // TODO: update this once we have a proper status
@@ -53,7 +57,7 @@ export const SnapshotView = (props: SnapshotViewProps) => {
         </div>
 
         <div className='relative hidden flex-col items-start gap-8 md:flex snapshot-view-slider'>
-            <SnapshotSlider snapshots={props.project.snapshots} mode='single' startSnapshot={snapshot} />
+            <SnapshotSlider snapshots={snapshots} mode='single' startSnapshot={snapshot} />
         </div>
 
     </main>;

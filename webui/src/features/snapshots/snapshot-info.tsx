@@ -22,6 +22,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 
 import './snapshot-info.scss';
+import { Textarea } from '@/components/ui/textarea';
 
 export interface SnapshotInfoProps {
     project: TimelapseProject,
@@ -147,6 +148,10 @@ export const SnapshotInfo = (props: SnapshotInfoProps) => {
                     <legend className='-ml-1 px-1 text-sm font-medium'>
                         Error
                     </legend>
+
+                    <div className='grid gap-3'>
+                        <Textarea disabled value={props.snapshot.error} className='h-[200px]' />
+                    </div>
                 </fieldset>
             }
 

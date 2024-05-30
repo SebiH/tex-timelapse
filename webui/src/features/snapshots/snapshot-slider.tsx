@@ -3,7 +3,7 @@ import './snapshot-slider.scss';
 import { TimelapseSnapshot } from '../../models/snapshot';
 import { UIState } from '@/models/ui-state';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, MoveLeft, MoveRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 type Props = {
     snapshots: TimelapseSnapshot[];
