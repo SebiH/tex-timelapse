@@ -6,4 +6,17 @@
     grid-template-columns: [config] 400px [main] 1fr;
     grid-template-rows: 1fr 200px;
     grid-gap: 1rem;
+    
+    .rendering-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 100;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
 }

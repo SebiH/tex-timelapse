@@ -20,6 +20,16 @@ export const SnapshotView = (props: SnapshotViewProps) => {
         return () => sub.unsubscribe();
     }, []);
 
+    // TODO: update this once we have a proper status
+    const isRendering = () => {
+        for (const key in snapshot?.status) {
+            if (snapshot.status[key] === 'In Progress')
+                return true;
+        }
+
+        return false;
+    };
+
     return <main className='grid flex-1 gap-4 overflow-none p-4 snapshot-view-grid'>
 
         <div className='relative hidden flex-col items-start gap-8 md:flex max-h-full overflow-y-auto'>
@@ -28,6 +38,13 @@ export const SnapshotView = (props: SnapshotViewProps) => {
 
 
         <div className='relative flex h-full min-h-[50vh] flex-col rounded-xl bg-muted/50 p-4 w-full overflow-y-auto max-h-full'>
+            {isRendering() && <div className='rendering-overlay'>
+                <div className='flex flex-col items-center justify-center gap-4'>
+                    <div className='loading-indicator'></div>
+                    <p className='text-white'>Loading ...</p>
+                </div>
+            </div>}
+
             <SnapshotPages project={props.project} snapshot={snapshot} />
 
             <Badge variant='outline' className='absolute left-3 top-3 bg-white'>
