@@ -1,3 +1,4 @@
+import subprocess
 from glob import glob
 import os
 import shutil
@@ -24,6 +25,13 @@ def init_project(name: str, source: str) -> str:
         shutil.unpack_archive(source, f'{folder}/source')
     else:
         raise Exception(f"Currently only zip source files are supported. Got: {source}")
+
+    # clean up git for faster processing
+    cmd = 'git gc --aggressive'
+
+    output = subprocess.run(cmd.split(), cwd=f'{folder}/source', capture_output=False, text=True)
+    if output.returncode != 0:
+        raise Exception(f"'{cmd}' failed with error: {output.stderr}")
 
     # copy default config
     shutil.copyfile('./default_config.yaml', f'{folder}/project.yaml')
