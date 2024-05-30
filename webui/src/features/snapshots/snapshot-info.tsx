@@ -113,6 +113,7 @@ export const SnapshotInfo = (props: SnapshotInfoProps) => {
                                 <>
                                     <div key={f} className="text-sm">
                                         {f.replace(/^\.\//, '')}
+                                        { f === props.snapshot.main_tex_file && <span className="text-xs text-gray-500"> (Main TeX File)</span>}
                                     </div>
                                     <Separator className="my-2" />
                                 </>
