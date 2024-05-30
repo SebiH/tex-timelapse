@@ -15,7 +15,6 @@ export async function loader({ params }: LoaderFunctionArgs<{ projectName: strin
     return await fetch(`/api/projects/${params.projectName}`);
 }
 
-
 const Project = () => {
     const project = useLoaderData() as TimelapseProject;
     UIState.setProject(project);

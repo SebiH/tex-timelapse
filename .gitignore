@@ -1,4 +1,5 @@
 # workdirs
 /projects/
+/uploads/
 
 __pycache__/

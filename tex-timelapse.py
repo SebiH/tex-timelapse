@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
 
 import argparse
-import os
-import shutil
-
-from slugify import slugify
 
 from tex_timelapse.reporters.terminal_reporter import TerminalReporter
 from tex_timelapse.compiler import compileProject
-from tex_timelapse.project import Project, list_projects
+from tex_timelapse.project import Project, init_project, list_projects
 from tex_timelapse.snapshot import SnapshotStatus
 from tex_timelapse.webserver import WebServer
 
@@ -77,29 +73,6 @@ serverParser = subparsers.add_parser('server', help='Server')
 # Actions
 ############################
 
-def initProject(name: str, source: str):
-    print(f"Initializing project '{name}' with default values...")
-    
-    # create folder
-    folder = f'./projects/{slugify(name)}'
-    os.makedirs(folder, exist_ok=True)
-
-    # init source folder
-    os.makedirs(f'{folder}/source', exist_ok=True)
-
-    # extract source zip into source folder
-    if source.endswith('.zip'):
-        shutil.unpack_archive(source, f'{folder}/source')
-    else:
-        raise Exception(f"Currently only zip source files are supported. Got: {source}")
-
-    # copy default config
-    shutil.copyfile('./default_config.yaml', f'{folder}/project.yaml')
-
-    # output
-    print(f"Project '{name}' successfully initialized in '{folder}'. Please edit the project.yaml file, then run:")
-    print(f"tex-timelapse run {name} <output>")
-
 
 def runProject(name: str, output: str, args):
     print(f"Running project '{name}'...")
@@ -142,7 +115,7 @@ def listProjects():
 args = parser.parse_args()
 
 if (args.action == 'init'):
-    initProject(args.project, args.source)
+    init_project(args.project, args.source)
 elif (args.action == 'run'):
     runProject(args.project, args.output, args)
 elif (args.action == 'list'):

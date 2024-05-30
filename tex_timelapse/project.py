@@ -1,5 +1,6 @@
 from glob import glob
 import os
+import shutil
 from typing import List
 import git
 from slugify import slugify
@@ -7,6 +8,32 @@ from slugify import slugify
 from tex_timelapse.config import Config
 from tex_timelapse.snapshot import Snapshot
 from tex_timelapse.util.serialization import loadFromFile
+
+def init_project(name: str, source: str) -> str:
+    print(f"Initializing project '{name}' with default values...")
+    
+    # create folder
+    folder = f'./projects/{slugify(name)}'
+    os.makedirs(folder, exist_ok=True)
+
+    # init source folder
+    os.makedirs(f'{folder}/source', exist_ok=True)
+
+    # extract source zip into source folder
+    if source.endswith('.zip'):
+        shutil.unpack_archive(source, f'{folder}/source')
+    else:
+        raise Exception(f"Currently only zip source files are supported. Got: {source}")
+
+    # copy default config
+    shutil.copyfile('./default_config.yaml', f'{folder}/project.yaml')
+
+    # output
+    print(f"Project '{name}' successfully initialized in '{folder}'. Please edit the project.yaml file, then run:")
+    print(f"tex-timelapse run {name} <output>")
+
+    return slugify(name)
+
 
 class Project:
     name: str
@@ -39,9 +66,6 @@ class Project:
                 self.snapshots.append(snapshot)
         print(f"Loaded {len(self.snapshots)} existing snapshots")
 
-        # order snapshots by date
-        self.snapshots.sort(key=lambda x: x.commit_date)
-
         # Check if there are any missing snapshots
         repo = git.Repo(os.path.join(self.projectFolder, 'source'))
         missingCounter = 0
@@ -52,6 +76,9 @@ class Project:
                 self.snapshots.append(sDict)
         
         print(f"Added {missingCounter} missing snapshots")
+
+        # order snapshots by date
+        self.snapshots.sort(key=lambda x: x.commit_date)
 
 
 def list_projects() -> list[str]:

@@ -1,13 +1,13 @@
 from os import path
 import os
-from flask import Flask, send_file
+from flask import Flask, jsonify, send_file
 from flask import request
 from flask_socketio import SocketIO # type: ignore
 from flask_cors import CORS # type: ignore
 
 from tex_timelapse.reporters.web_reporter import WebReporter
 from tex_timelapse.compiler import compileSnapshot
-from tex_timelapse.project import Project, list_projects
+from tex_timelapse.project import Project, init_project, list_projects
 from tex_timelapse.util.serialization import saveToFile
 
 from .actions.init_repo import InitRepoAction
@@ -24,15 +24,8 @@ class WebServer:
 
         webProjects = {}
         localProjects: dict[str, Project] = {}
-        
-        for name in list_projects():
-            project = Project(name)
-            localProjects[name] = project
-            webProjects[name] = {
-                'name': name,
-                'config': project.config,
-                'snapshots': [snapshot.to_dict() for snapshot in project.snapshots]
-            }
+        self.init_projects(webProjects, localProjects)
+
 
         @self.app.route('/api/projects')
         def listProjects():
@@ -132,10 +125,60 @@ class WebServer:
                 return send_file(filePath)
             except Exception as e:
                 return str(e)
-        
+
+
+        UPLOAD_FOLDER = 'uploads'
+        if not os.path.exists(UPLOAD_FOLDER):
+            os.makedirs(UPLOAD_FOLDER)
+
+
+        @self.app.route('/api/import', methods=['POST'])
+        def __import_project():
+            if 'file' not in request.files:
+                return jsonify({"error": "No file part"}), 400
+
+            project_file = request.files['file']
+            project_name = request.form.get('name', '')
+
+            if project_file.filename == '':
+                return jsonify({"error": "No selected file"}), 400
+
+            if not project_file.filename.endswith('.zip'):
+                return jsonify({"error": "Only zip files are allowed"}), 400
+
+            if not project_name:
+                return jsonify({"error": "Project name is required"}), 400
+
+            # Save the file to the upload folder
+            file_path = os.path.join(UPLOAD_FOLDER, project_file.filename)
+            project_file.save(file_path)
+
+            name = init_project(project_name, f'{UPLOAD_FOLDER}/{project_file.filename}')
+            self.init_projects(webProjects, localProjects)
+
+            # remove the uploaded file
+            os.remove(file_path)
+
+            return jsonify(
+                {
+                    "message": "Project imported successfully",
+                    "name": name
+                }
+            ), 200
+
     def send_message(self, message):
         self.socketio.emit('message', message)
 
     def run(self):
         self.socketio.run(self.app)
+
+    def init_projects(self, webProjects, localProjects):
+        for name in list_projects():
+            project = Project(name)
+            localProjects[name] = project
+            webProjects[name] = {
+                'name': name,
+                'config': project.config,
+                'snapshots': [snapshot.to_dict() for snapshot in project.snapshots]
+            }
 

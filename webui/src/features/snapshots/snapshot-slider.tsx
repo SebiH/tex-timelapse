@@ -45,15 +45,15 @@ export const SnapshotSlider = ({ snapshots, mode, startSnapshot, endSnapshot }: 
     const getPosition = (time: number) => (time - min) / (max - min) * 100;
 
     const commitDots = snapshots.map(s => {
-        const style = { left: `${getPosition(s.commit_date)}%`, 'background-color': '#D8DEE9' };
+        const style = { left: `${getPosition(s.commit_date)}%`, 'backgroundColor': '#D8DEE9' };
 
         for (const job of jobs) {
             if (s.status[job.name] === 'In Progress') {
-                style['background-color'] = '#EBCB8B';
+                style['backgroundColor'] = '#EBCB8B';
             } else if (s.status[job.name] === 'Completed') {
-                style['background-color'] = '#A3BE8C';
+                style['backgroundColor'] = '#A3BE8C';
             } else if (s.status[job.name] === 'Failed') {
-                style['background-color'] = '#BF616A';
+                style['backgroundColor'] = '#BF616A';
             }
         }
 
