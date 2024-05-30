@@ -1,3 +1,4 @@
+from typing import Dict, Set
 from tex_timelapse.actions.action import Action
 from tex_timelapse.project import Project
 from tex_timelapse.snapshot import Snapshot, SnapshotStatus
@@ -35,7 +36,7 @@ class CompileLatexAction(Action):
         #                            |    |
         #                      Number of removed / added lines (may be optional)
         #
-        changedFiles = {}
+        changedFiles: Dict[str, Set[int]] = {}
         for file, diff in snapshot.gitDiff.items():
             changedFiles[file] = set()
 
@@ -105,3 +106,13 @@ class CompileLatexAction(Action):
 
         return SnapshotStatus.COMPLETED
 
+    def reset(self, snapshot: Snapshot) -> None:
+        pdfFile = snapshot.main_tex_file[:-4] + ".pdf"
+        snapshot.changed_pages = []
+
+        try:
+            # remove all generated latex files
+            os.remove(f'{snapshot.getWorkDir()}/latex/{pdfFile}')
+            snapshot.execute('rm -f *.aux *.log *.out *.synctex.gz', 'latex', True)
+        except:  # noqa: E722
+            pass

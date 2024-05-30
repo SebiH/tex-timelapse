@@ -18,3 +18,7 @@ class Action(ABC):
     @abstractmethod
     def getName(self) -> str:
         pass
+
+    @abstractmethod
+    def reset(self, snapshot: Snapshot) -> None:
+        pass

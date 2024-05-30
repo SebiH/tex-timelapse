@@ -77,3 +77,10 @@ class AssembleImageAction(Action):
         img.save(f'{snapshot.project_dir}/frames/frame_{snapshot.commit_date}.png')
 
         return SnapshotStatus.COMPLETED
+
+    def reset(self, snapshot: Snapshot) -> None:
+        try:
+            image_path = f'{snapshot.project_dir}/frames/frame_{snapshot.commit_date}.png'
+            os.remove(image_path)
+        except:  # noqa: E722
+            pass

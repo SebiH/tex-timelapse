@@ -1,12 +1,23 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { BugPlay } from 'lucide-react';
+import { BugPlay, Trash } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { TimelapseSnapshot } from '@/models/snapshot';
 import { TimelapseProject } from '@/models/project';
 import { UIState } from '@/models/ui-state';
 import { ToastAction } from '@radix-ui/react-toast';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+  } from '@/components/ui/alert-dialog';
 
 export interface SnapshotInfoProps {
     project: TimelapseProject,
@@ -15,6 +26,25 @@ export interface SnapshotInfoProps {
 
 export const SnapshotInfo = (props: SnapshotInfoProps) => {
     const { toast } = useToast();
+
+    const resetSnapshot = async () => {
+        const commitSha = props.snapshot.commit_sha;
+        const success = await UIState.resetSnapshot(commitSha);
+
+        if (success) {
+            toast({
+                title: 'Success!',
+                description: 'Snapshot reset successfully',
+                action: <ToastAction altText="View" onClick={() => UIState.setCurrentSnapshot(commitSha)}>Go to snapshot</ToastAction>,
+            });
+        } else {
+            toast({
+                title: 'Error',
+                description: 'Snapshot could not be reset',
+                action: <ToastAction altText="View" onClick={() => UIState.setCurrentSnapshot(commitSha)}>Go to snapshot</ToastAction>,
+            });
+        }
+    };
 
     const compileSnapshot = async () => {
         const commitSha = props.snapshot.commit_sha;
@@ -72,10 +102,35 @@ export const SnapshotInfo = (props: SnapshotInfoProps) => {
 
         </form>
 
-        <Button variant='default' className='w-full' onClick={compileSnapshot.bind(this)}>
-            <BugPlay className='w-4 h-4 m-1' />
-            Render Snapshot
-        </Button>
+        <div className='flex flex-col gap-2 p-4'>
+
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant='destructive' className='w-full'>
+                        <Trash className='w-4 h-4 m-1' />
+                        Reset Snapshot
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone and will reset the snapshot to its initial state.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={resetSnapshot.bind(this)}>Continue</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+
+            <Button variant='default' className='w-full' onClick={compileSnapshot.bind(this)}>
+                <BugPlay className='w-4 h-4 m-1' />
+                Render Snapshot
+            </Button>
+        </div>
 
     </div>;
 };

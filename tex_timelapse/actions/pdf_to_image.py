@@ -1,4 +1,5 @@
 import os
+from shutil import rmtree
 from tex_timelapse.actions.action import Action
 from tex_timelapse.project import Project
 from tex_timelapse.snapshot import Snapshot, SnapshotStatus
@@ -27,3 +28,7 @@ class PdfToImageAction(Action):
         snapshot.pages = [f[2:] for f in images.split('\n') if f.endswith('.png')]
 
         return SnapshotStatus.COMPLETED
+
+    def reset(self, snapshot: Snapshot) -> None:
+        snapshot.pages = []
+        rmtree(f'{snapshot.getWorkDir()}/images', ignore_errors=True)

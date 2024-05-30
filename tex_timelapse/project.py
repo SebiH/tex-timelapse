@@ -14,7 +14,7 @@ class Project:
     config: Config
 
     def __init__(self, name: str):
-        self.name = slugify(name);
+        self.name = slugify(name)
         self.projectFolder = f'./projects/{self.name}'
 
         default_values = {
@@ -28,6 +28,8 @@ class Project:
         self.initSnapshots()
 
     def initSnapshots(self):
+        self.snapshots = []
+
         # Load existing snapshots
         for file in glob(f'{self.projectFolder}/snapshots/**/snapshot.yaml'):
             sDict = loadFromFile(file)

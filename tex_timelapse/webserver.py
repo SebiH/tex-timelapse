@@ -2,12 +2,18 @@ from os import path
 import os
 from flask import Flask, send_file
 from flask import request
-from flask_socketio import SocketIO
-from flask_cors import CORS
+from flask_socketio import SocketIO # type: ignore
+from flask_cors import CORS # type: ignore
 
 from tex_timelapse.reporters.web_reporter import WebReporter
 from tex_timelapse.compiler import compileSnapshot
 from tex_timelapse.project import Project, list_projects
+from tex_timelapse.util.serialization import saveToFile
+
+from .actions.init_repo import InitRepoAction
+from .actions.compile_latex import CompileLatexAction
+from .actions.pdf_to_image import PdfToImageAction
+from .actions.assemble_image import AssembleImageAction
 
 class WebServer:
     def __init__(self):
@@ -53,10 +59,6 @@ class WebServer:
         def __compileSnapshot(name, snapshot_sha):
             project = localProjects[name]
             try:
-                from .actions.init_repo import InitRepoAction
-                from .actions.compile_latex import CompileLatexAction
-                from .actions.pdf_to_image import PdfToImageAction
-                from .actions.assemble_image import AssembleImageAction
                 jobs = [
                     InitRepoAction(),
                     CompileLatexAction(),
@@ -67,11 +69,48 @@ class WebServer:
                 snapshot = compileSnapshot(project, snapshot_sha, jobs, WebReporter(self.socketio))
 
                 # update snapshot in project snapshots
-                project.snapshots = [snapshot.to_dict() if s.commit_sha == snapshot_sha else s for s in project.snapshots]
+                project.initSnapshots()
+                webProjects[name]['snapshots'] = [snapshot.to_dict() for snapshot in project.snapshots]
 
                 return { 'success': True, 'snapshot': snapshot.to_dict() }
             except Exception as e:
                 return { 'success': False, 'error': str(e) }
+
+
+        @self.app.route('/api/projects/<name>/snapshot/<snapshot_sha>/reset/<stage>')
+        def __resetSnapshot (name, snapshot_sha, stage):
+            project = localProjects[name]
+            try:
+                jobs = [
+                    InitRepoAction(),
+                    CompileLatexAction(),
+                    PdfToImageAction(),
+                    AssembleImageAction()
+                ]
+
+                if stage is not None and stage.isdigit():
+                    jobs = jobs[:int(stage)]
+
+                snapshot = next((s for s in project.snapshots if s.commit_sha == snapshot_sha), None)
+                if snapshot is None:
+                    raise Exception(f"Snapshot {snapshot_sha} not found")
+
+                # reset all jobs, starting from the last one in case earlier jobs depend on later ones
+                for job in reversed(jobs):
+                    job.reset(snapshot)
+                    snapshot.status[job.getName()] = None
+                    saveToFile(f'{snapshot.getWorkDir()}/snapshot.yaml', snapshot)
+                
+                # reload snapshots from file
+                project.initSnapshots()
+                webProjects[name]['snapshots'] = [snapshot.to_dict() for snapshot in project.snapshots]
+                snapshot = next((s for s in project.snapshots if s.commit_sha == snapshot_sha), None)
+
+                return { 'success': True, 'snapshot': snapshot.to_dict() }
+            except Exception as e:
+                return { 'success': False, 'error': str(e) }
+
+
 
         @self.app.route('/api/projects/<name>/snapshot/<snapshot>/pdf')
         def getPdf(name, snapshot):

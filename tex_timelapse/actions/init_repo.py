@@ -102,3 +102,9 @@ class InitRepoAction(Action):
             unscanned_files.remove(unscanned_files[0])
         
         return included_files
+
+    def reset(self, snapshot: Snapshot) -> None:
+        snapshot.gitDiff = {}
+        snapshot.includes = []
+        cwd = snapshot.getWorkDir()
+        rmtree(f'{cwd}/latex', ignore_errors=True)
