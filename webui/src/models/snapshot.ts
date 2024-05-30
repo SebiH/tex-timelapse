@@ -3,7 +3,7 @@ export type TimelapseSnapshot = {
     'commit_date': number;
     'status': { [key: string]: string };
     'error': string;
-    'includes': number[],
+    'includes': string[],
     'gitDiff': string,
     'changed_pages': number[],
     'pages': []

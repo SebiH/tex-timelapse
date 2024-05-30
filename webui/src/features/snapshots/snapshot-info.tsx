@@ -18,6 +18,8 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 
 import './snapshot-info.scss';
 
@@ -104,8 +106,19 @@ export const SnapshotInfo = (props: SnapshotInfoProps) => {
                     <Label>SHA</Label>
                     <Input disabled value={props.snapshot.commit_sha} />
 
-                    <Label>Includes</Label>
-                    <pre><code>{JSON.stringify(props.snapshot.includes, null, 2)}</code></pre>
+                    <Label>Detected Files</Label>
+                    <ScrollArea className="h-32 w-full rounded-md border">
+                        <div className="p-4">
+                            {props.snapshot.includes.map((f) => (
+                                <>
+                                    <div key={f} className="text-sm">
+                                        {f.replace(/^\.\//, '')}
+                                    </div>
+                                    <Separator className="my-2" />
+                                </>
+                            ))}
+                        </div>
+                    </ScrollArea>
                 </div>
             </fieldset>
 
