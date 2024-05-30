@@ -108,6 +108,7 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
 
 def runAction(action: Action, snapshot: Snapshot, reporter: Reporter):
     snapshot.status[action.getName()] = SnapshotStatus.IN_PROGRESS
+    reporter.update_progress(snapshot)
 
     try:
         result = action.run(snapshot)

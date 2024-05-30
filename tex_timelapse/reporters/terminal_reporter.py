@@ -16,8 +16,11 @@ class TerminalReporter(Reporter):
         self.bar = type(self.context).__enter__(self.context)
         pass
 
-    def add_progress(self, snapshot: Optional[Snapshot] = None) -> None:
+    def add_progress(self, snapshot: Snapshot) -> None:
         self.bar()
+        pass
+
+    def update_progress(self, snapshot: Snapshot) -> None:
         pass
 
     def set_progress(self, num: float) -> None:

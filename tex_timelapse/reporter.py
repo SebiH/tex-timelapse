@@ -10,7 +10,11 @@ class Reporter(ABC):
         pass
 
     @abstractmethod
-    def add_progress(self, snapshot: Optional[Snapshot] = None) -> None:
+    def add_progress(self, snapshot: Snapshot) -> None:
+        pass
+
+    @abstractmethod
+    def update_progress(self, snapshot: Snapshot) -> None:
         pass
 
     @abstractmethod

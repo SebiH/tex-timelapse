@@ -10,9 +10,14 @@ class WebReporter(Reporter):
     def set_stage(self, name: str, length: int) -> None:
         self.socketio.emit('stage', { 'stage': name, 'length': length })
 
-    def add_progress(self, snapshot: Optional[Snapshot] = None) -> None:
+    def add_progress(self, snapshot: Snapshot) -> None:
         self.socketio.emit('add_progress', {
-            'snapshot': snapshot.to_dict() if snapshot is not None else None
+            'snapshot': snapshot.to_dict()
+        })
+
+    def update_progress(self, snapshot: Snapshot) -> None:
+        self.socketio.emit('add_progress', {
+            'snapshot': snapshot.to_dict()
         })
 
     def set_progress(self, num: float) -> None:

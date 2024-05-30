@@ -7,8 +7,6 @@ import { SnapshotSlider } from '@/features/snapshots/snapshot-slider';
 import { SnapshotInfo } from '@/features/snapshots/snapshot-info';
 import { useEffect, useState } from 'react';
 import { UIState } from '@/models/ui-state';
-import { useToast } from '@/components/ui/use-toast';
-import { socket } from '@/socketio';
 
 export interface SnapshotViewProps {
     project: TimelapseProject
@@ -16,17 +14,6 @@ export interface SnapshotViewProps {
 
 export const SnapshotView = (props: SnapshotViewProps) => {
     const [ snapshot, setSnapshot ] = useState(props.project.snapshots[0]);
-    const { toast } = useToast();   
-
-    useEffect(() => {
-        socket.on('log', (data: any) => {
-            console.log(data);
-            toast({
-                title: 'Log',
-                description: JSON.stringify(data),
-            });
-        });
-    }, []);
 
     useEffect(() => {
         const sub = UIState.currentSnapshot.subscribe(s => s && setSnapshot(s));
