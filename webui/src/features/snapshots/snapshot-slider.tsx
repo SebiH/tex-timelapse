@@ -5,19 +5,26 @@ import { UIState } from '@/models/ui-state';
 
 type Props = {
     snapshots: TimelapseSnapshot[];
-    onSelect: (snapshot: TimelapseSnapshot) => void;
+    startSnapshot: TimelapseSnapshot;
+    endSnapshot?: TimelapseSnapshot;
+    mode: 'single' | 'range';
 }
 
-export const SnapshotSlider = ({ snapshots, onSelect }: Props) => {
+const jobs = [
+    { name: 'Init Repository' },
+    { name: 'Compile LaTeX' },
+    { name: 'PDF to Image' },
+    { name: 'Assemble Image' }
+];
+
+export const SnapshotSlider = ({ snapshots, mode, startSnapshot, endSnapshot }: Props) => {
     const [startCommit, setStart] = useState(0);
     const [endCommit, setEnd] = useState(100);
     const [isDragging, setIsDragging] = useState(false);
 
-    const sliderRef = useRef(null);
-
     useEffect(() => {
         const sub = UIState.currentSnapshot.subscribe(snapshot => {
-            if (snapshot) {
+            if (snapshot && mode === 'single' && !isDragging) {
                 const pos = getPosition(snapshot.commit_date);
                 setStart(pos);
             }
@@ -25,13 +32,31 @@ export const SnapshotSlider = ({ snapshots, onSelect }: Props) => {
         return () => sub.unsubscribe();
     }, []);
 
+    const sliderRef = useRef(null);
+
+    const selectSnapshot = (snapshot: TimelapseSnapshot) => {
+        UIState.setCurrentSnapshot(snapshot.commit_sha);
+    };
+
     const min = snapshots.map(s => s.commit_date).reduce((a, b) => Math.min(a, b));
     const max = snapshots.map(s => s.commit_date).reduce((a, b) => Math.max(a, b));
     const getPosition = (time: number) => (time - min) / (max - min) * 100;
 
     const commitDots = snapshots.map(s => {
-        const style = { left: `${getPosition(s.commit_date)}%` };
-        return <div className='snapshot' style={style} key={s.commit_sha}>
+        const style = { left: `${getPosition(s.commit_date)}%`, 'background-color': '#D8DEE9' };
+
+        for (const job of jobs) {
+            if (s.status[job.name] === 'In Progress') {
+                style['background-color'] = '#EBCB8B';
+            } else if (s.status[job.name] === 'Completed') {
+                style['background-color'] = '#A3BE8C';
+            } else if (s.status[job.name] === 'Failed') {
+                style['background-color'] = '#BF616A';
+            }
+        }
+
+        const classNames = `snapshot ${ mode === 'single' && 'interactive' } ${ startSnapshot === s && 'selected' }`;
+        return <div className={classNames} style={style} key={s.commit_sha} onClick={() => selectSnapshot(s)}>
             <div className='dot'></div>
             {/* <div className='label'>{commit.date.toLocaleTimeString()}</div> */}
         </div>;
@@ -43,6 +68,26 @@ export const SnapshotSlider = ({ snapshots, onSelect }: Props) => {
         setIsDragging(true);
         const setPosition = type === 'start' ? setStart : setEnd;
 
+
+        const setClosestSnapshot = (current: number, snap: boolean) => {
+            // find closest snapshot
+            let closestDistance: number | undefined;
+            let closestSnapshot: TimelapseSnapshot | undefined;
+            for (const snapshot of snapshots) {
+                const pos = getPosition(snapshot.commit_date);
+                if (closestDistance === undefined || Math.abs(pos - current) < Math.abs(closestDistance - current)) {
+                    closestDistance = pos;
+                    closestSnapshot = snapshot;
+                }
+            }
+
+            if (closestDistance !== undefined && snap)
+                setPosition(closestDistance);
+
+            if (closestSnapshot)
+                UIState.setCurrentSnapshot(closestSnapshot.commit_sha);
+        };
+
         if (sliderRef) {
             const handlePos = (sliderRef.current as any).getBoundingClientRect().left;
             const width = (sliderRef.current as any).getBoundingClientRect().width;
@@ -53,32 +98,19 @@ export const SnapshotSlider = ({ snapshots, onSelect }: Props) => {
                 const mousePos = e.pageX;
                 const pos = (mousePos - handlePos) / width * 100;
                 current = Math.min(Math.max(0, pos), 100);
+                setClosestSnapshot(current, false);
                 setPosition(current);
             };
+            
+            // initialising current position in case mouse doesn't move
+            onMouseMove(event.nativeEvent);
 
             const onMouseUp = (e: MouseEvent) => {
                 e.preventDefault();
                 window.removeEventListener('mousemove', onMouseMove);
                 window.removeEventListener('mouseup', onMouseUp);
 
-                // find closest snapshot
-                let closestDistance: number | undefined;
-                let closestSnapshot: TimelapseSnapshot | undefined;
-                for (const snapshot of snapshots) {
-                    const pos = getPosition(snapshot.commit_date);
-                    if (closestDistance === undefined || Math.abs(pos - current) < Math.abs(closestDistance - current)) {
-                        closestDistance = pos;
-                        closestSnapshot = snapshot;
-                    }
-                }
-
-                if (closestDistance !== undefined)
-                    setPosition(closestDistance);
-
-                if (closestSnapshot)
-                    UIState.setCurrentSnapshot(closestSnapshot.commit_sha);
-
-
+                setClosestSnapshot(current, true);
                 setIsDragging(false);
             };
 
@@ -89,12 +121,13 @@ export const SnapshotSlider = ({ snapshots, onSelect }: Props) => {
 
 
     return <div className='slider-container'>
+
         <div className='slider' ref={sliderRef}>
 
             <div className='line'></div>
             {commitDots}
 
-            <div className={'snapshot interactive' + (isDragging ? ' dragging' : '')} style={{ 'left': `${startCommit}%` }} onMouseDown={(e) => onSliderMouseDown(e, 'start')}>
+            <div className={'snapshot interactive slider' + (isDragging ? ' dragging' : '')} style={{ 'left': `${startCommit}%` }} onMouseDown={(e) => onSliderMouseDown(e, 'start')}>
                 <div className='dot'></div>
             </div>
 

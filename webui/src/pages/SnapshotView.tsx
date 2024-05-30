@@ -53,7 +53,7 @@ export const SnapshotView = (props: SnapshotViewProps) => {
         </div>
 
         <div className='relative hidden flex-col items-start gap-8 md:flex col-span-2'>
-            <SnapshotSlider snapshots={props.project.snapshots} onSelect={setSnapshot.bind(this)} />
+            <SnapshotSlider snapshots={props.project.snapshots} mode='single' startSnapshot={snapshot} />
         </div>
 
     </main>;

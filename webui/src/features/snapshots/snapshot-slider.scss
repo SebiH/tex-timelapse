@@ -9,8 +9,8 @@
         top: 8px;
         left: 0;
         width: 100%;
-        height: 2px;
-        background: black;
+        height: 1px;
+        background-color: #E5E9F0;
     }
 
     .snapshot {
@@ -19,8 +19,7 @@
         width: 20px;
         height: 20px;
         border-radius: 50%;
-        background: red;
-        border: 1px solid black;
+            transform: translate(0px, 0px);
 
         transition: 0.2s linear;
 
@@ -30,7 +29,20 @@
 
         &.interactive {
             cursor: pointer;
-            background: blue;
+        }
+
+        &.slider {
+            width: 30px;
+            height: 30px;
+            transform: translate(-5px, -5px);
+            background: transparent;
+            border: 4px solid #2E3440;
+        }
+
+        &.selected {
+            width: 30px;
+            height: 30px;
+            transform: translate(-5px, -5px);
         }
     }
 }
