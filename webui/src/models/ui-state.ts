@@ -1,6 +1,7 @@
 import { TimelapseProject } from './project';
 import { BehaviorSubject } from 'rxjs';
 import { TimelapseSnapshot } from './snapshot';
+import { io } from 'socket.io-client';
 
 export const UIState = {
     project: new BehaviorSubject<TimelapseProject | null>(null),
@@ -75,4 +76,27 @@ export const UIState = {
         }
     }
 };
+
+const socket = io();
+socket.on('stage', ({ stage, length }: { stage: string, length: number }) => {
+    // TODO
+    console.log('stage', stage, length);
+});
+
+socket.on('add_progress', ({ snapshot }: { snapshot: TimelapseSnapshot }) => {
+    console.log('add_progress', snapshot);
+    const project = UIState.project.value;
+    if (project)
+        UIState.updateSnapshot(project, snapshot);
+});
+
+socket.on('set_progress', ({ set }: { set: number }) => {
+    // TODO
+    console.log('set_progress', set);
+});
+
+socket.on('log', ({ msg, snapshot }: { msg: string, snapshot?: string }) => {
+    // TODO
+    console.log('log', msg, snapshot);
+});
 
