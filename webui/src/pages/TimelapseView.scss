@@ -1,0 +1,43 @@
+.project-view-grid {
+    height: calc(100% - 50px);
+
+    display: grid;
+    grid-template-columns: [config] 400px [main] 1fr;
+    grid-template-rows: [main] 1fr [slider] 50px;
+    grid-gap: 1rem;
+    
+    .rendering-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 100;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .project-view-config {
+        grid-column: config;
+        grid-row: main;
+        overflow-y: auto;
+        padding: 1rem;
+    }
+
+    .project-view-main {
+        grid-column: main;
+        grid-row: main;
+        position: relative;
+    }
+
+    .project-view-slider {
+        grid-row: slider;
+        grid-column: config / span 2;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+}
+
