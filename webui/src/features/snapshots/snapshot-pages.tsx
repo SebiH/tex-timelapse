@@ -43,7 +43,7 @@ export const SnapshotPages = (props: SnapshotPagesProps) => {
         }
         );
 
-        return <div className='w-full relative overflow-y-auto'>
+        return <div className='w-full h-full relative overflow-y-auto'>
             <div className='w-full snapshot-pages-container'>
                 {images}
             </div>

@@ -2,8 +2,9 @@ import { Link, useLoaderData } from 'react-router-dom';
 
 import './ProjectList.scss';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlusCircle, faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
+import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '@/components/ui/button';
+import { CirclePlus } from 'lucide-react';
 
 export async function loader() {
     return await fetch('/api/projects');
@@ -32,12 +33,12 @@ const ProjectList = () => {
                 ))}
 
                 <div className='centered-container'>
-                    {/* <Link to='/projects/new'> */}
-                        <Button disabled>
-                            <FontAwesomeIcon icon={faPlusCircle} className="mr-2 h-4 w-4" />
-                            Create New Project (coming soon)
+                    <Link to='/import'>
+                        <Button className='flex flex-row gap-2'>
+                            <CirclePlus />
+                            Create New Project
                         </Button>
-                    {/* </Link> */}
+                    </Link>
                 </div>
             </div>
         </div>

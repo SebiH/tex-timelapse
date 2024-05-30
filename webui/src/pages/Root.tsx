@@ -7,9 +7,7 @@ export default function Root() {
 
     return (
         <>
-            <div className={navigation.state === 'loading' ? 'loading' : ''} >
-                <Outlet />
-            </div>
+            <Outlet />
 
             {
                 navigation.state === 'loading' &&

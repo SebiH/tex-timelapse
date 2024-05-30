@@ -32,12 +32,12 @@ export const SnapshotView = (props: SnapshotViewProps) => {
 
     return <main className='grid flex-1 gap-4 overflow-none p-4 snapshot-view-grid'>
 
-        <div className='relative hidden flex-col items-start gap-8 md:flex max-h-full overflow-y-auto'>
+        <div className='relative hidden flex-col items-start gap-8 md:flex max-h-full overflow-y-auto snapshot-view-config'>
             <SnapshotInfo snapshot={snapshot} project={props.project} />
         </div>
 
 
-        <div className='relative flex h-full min-h-[50vh] flex-col rounded-xl bg-muted/50 p-4 w-full overflow-y-auto max-h-full'>
+        <div className='relative flex h-full min-h-[50vh] flex-col rounded-xl bg-muted/50 p-4 w-full h-full snapshot-view-main'>
             {isRendering() && <div className='rendering-overlay'>
                 <div className='flex flex-col items-center justify-center gap-4'>
                     <div className='loading-indicator'></div>
@@ -52,7 +52,7 @@ export const SnapshotView = (props: SnapshotViewProps) => {
             </Badge>
         </div>
 
-        <div className='relative hidden flex-col items-start gap-8 md:flex col-span-2'>
+        <div className='relative hidden flex-col items-start gap-8 md:flex snapshot-view-slider'>
             <SnapshotSlider snapshots={props.project.snapshots} mode='single' startSnapshot={snapshot} />
         </div>
 
