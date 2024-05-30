@@ -65,7 +65,10 @@ class WebServer:
                 ]
 
                 snapshot = compileSnapshot(project, snapshot_sha, jobs, WebReporter(self.socketio))
-                self.socketio.emit('log', snapshot.to_dict())
+
+                # update snapshot in project snapshots
+                project.snapshots = [snapshot.to_dict() if s.commit_sha == snapshot_sha else s for s in project.snapshots]
+
                 return { 'success': True, 'snapshot': snapshot.to_dict() }
             except Exception as e:
                 return { 'success': False, 'error': str(e) }

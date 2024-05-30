@@ -1,5 +1,7 @@
+from typing import Optional
 from alive_progress import alive_bar # type: ignore
 from tex_timelapse.reporter import Reporter
+from tex_timelapse.snapshot import Snapshot
 
 class TerminalReporter(Reporter):
     def __init__(self):
@@ -14,7 +16,7 @@ class TerminalReporter(Reporter):
         self.bar = type(self.context).__enter__(self.context)
         pass
 
-    def add_progress(self) -> None:
+    def add_progress(self, snapshot: Optional[Snapshot] = None) -> None:
         self.bar()
         pass
 
@@ -22,7 +24,7 @@ class TerminalReporter(Reporter):
         self.bar(num)
         pass
 
-    def log(self, msg: str) -> None:
+    def log(self, msg: str, snapshot: Optional[Snapshot] = None) -> None:
         print(msg)
         pass
 

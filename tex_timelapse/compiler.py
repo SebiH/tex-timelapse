@@ -22,19 +22,6 @@ def set_threads(threads: int):
     pool = ThreadPool(threads)
 
 
-# from .actions.init_repo import InitRepoJob
-# from .jobs.compile_latex import CompileLatexJob
-# from .jobs.pdf_to_image import PdfToImageJob
-# from .jobs.assemble_image import AssembleImageJob
-# jobs: List[Job] = [
-#     InitRepoJob(),
-#     CompileLatexJob(),
-#     PdfToImageJob(),
-#     AssembleImageJob()
-# ]
-
-
-
 def canRun(prevAction: str, action: Action, snapshot: Snapshot) -> bool:
     # action already complete
     if snapshot.status.get(action.getName()) == SnapshotStatus.COMPLETED:
@@ -130,4 +117,4 @@ def runAction(action: Action, snapshot: Snapshot, reporter: Reporter):
         snapshot.error = str(e)
         reporter.log(f'Action "{action.getName()}" for snapshot {snapshot.commit_sha} failed with error: {e}')
     saveToFile(f'{snapshot.getWorkDir()}/snapshot.yaml', snapshot)
-    reporter.add_progress()
+    reporter.add_progress(snapshot)

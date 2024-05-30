@@ -58,7 +58,7 @@ export const SnapshotInfo = (props: SnapshotInfoProps) => {
                     <pre><code>{ JSON.stringify(props.snapshot.includes, null, 2) }</code></pre>
 
                     <Label>Changed Pages</Label>
-                    <pre><code>{ JSON.stringify(props.snapshot.changed_pages, null, 2) }</code></pre>
+                    <pre><code>{ JSON.stringify(props.snapshot, null, 2) }</code></pre>
                 </div>
             </fieldset>
 

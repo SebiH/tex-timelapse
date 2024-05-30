@@ -1,5 +1,8 @@
 
 from abc import ABC, abstractmethod
+from typing import Optional
+
+from tex_timelapse.snapshot import Snapshot
 
 class Reporter(ABC):
     @abstractmethod
@@ -7,7 +10,7 @@ class Reporter(ABC):
         pass
 
     @abstractmethod
-    def add_progress(self) -> None:
+    def add_progress(self, snapshot: Optional[Snapshot] = None) -> None:
         pass
 
     @abstractmethod
@@ -15,5 +18,5 @@ class Reporter(ABC):
         pass
 
     @abstractmethod
-    def log(self, msg: str) -> None:
+    def log(self, msg: str, snapshot: Optional[Snapshot] = None) -> None:
         pass
