@@ -39,6 +39,9 @@ class Project:
                 self.snapshots.append(snapshot)
         print(f"Loaded {len(self.snapshots)} existing snapshots")
 
+        # order snapshots by date
+        self.snapshots.sort(key=lambda x: x.commit_date)
+
         # Check if there are any missing snapshots
         repo = git.Repo(os.path.join(self.projectFolder, 'source'))
         missingCounter = 0

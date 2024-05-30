@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import './snapshot-slider.scss';
 import { TimelapseSnapshot } from '../../models/snapshot';
 import { UIState } from '@/models/ui-state';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight, MoveLeft, MoveRight } from 'lucide-react';
 
 type Props = {
     snapshots: TimelapseSnapshot[];
@@ -55,7 +57,7 @@ export const SnapshotSlider = ({ snapshots, mode, startSnapshot, endSnapshot }: 
             }
         }
 
-        const classNames = `snapshot ${ mode === 'single' && 'interactive' } ${ startSnapshot === s && 'selected' }`;
+        const classNames = `snapshot ${mode === 'single' && 'interactive'} ${startSnapshot === s && 'selected'}`;
         return <div className={classNames} style={style} key={s.commit_sha} onClick={() => selectSnapshot(s)}>
             <div className='dot'></div>
             {/* <div className='label'>{commit.date.toLocaleTimeString()}</div> */}
@@ -95,13 +97,13 @@ export const SnapshotSlider = ({ snapshots, mode, startSnapshot, endSnapshot }: 
 
             const onMouseMove = (e: MouseEvent) => {
                 e.preventDefault();
-                const mousePos = e.pageX;
+                const mousePos = e.pageX - 10; // half the width of the handle
                 const pos = (mousePos - handlePos) / width * 100;
                 current = Math.min(Math.max(0, pos), 100);
                 setClosestSnapshot(current, false);
                 setPosition(current);
             };
-            
+
             // initialising current position in case mouse doesn't move
             onMouseMove(event.nativeEvent);
 
@@ -119,22 +121,48 @@ export const SnapshotSlider = ({ snapshots, mode, startSnapshot, endSnapshot }: 
         }
     };
 
+    const selectNext = () => {
+        // assumes snapshots are sorted by date
+        const currentIndex = snapshots.findIndex(s => s === startSnapshot);
+        if (currentIndex < snapshots.length - 1) {
+            UIState.setCurrentSnapshot(snapshots[currentIndex + 1].commit_sha);
+        }
+    };
 
-    return <div className='slider-container'>
+    const selectPrev = () => {
+        // assumes snapshots are sorted by date
+        const currentIndex = snapshots.findIndex(s => s === startSnapshot);
+        if (currentIndex > 0) {
+            UIState.setCurrentSnapshot(snapshots[currentIndex - 1].commit_sha);
+        }
+    };
 
-        <div className='slider' ref={sliderRef}>
+    return <div className='selection-container'>
 
-            <div className='line'></div>
-            {commitDots}
+        <Button variant='ghost' className='h-full' onClick={selectPrev.bind(this)}>
+            <ChevronLeft />
+        </Button>
 
-            <div className={'snapshot interactive slider' + (isDragging ? ' dragging' : '')} style={{ 'left': `${startCommit}%` }} onMouseDown={(e) => onSliderMouseDown(e, 'start')}>
-                <div className='dot'></div>
+        <div className='slider-container'>
+
+            <div className='slider' ref={sliderRef}>
+
+                <div className='line'></div>
+                {commitDots}
+
+                <div className={'snapshot interactive slider' + (isDragging ? ' dragging' : '')} style={{ 'left': `${startCommit}%` }} onMouseDown={(e) => onSliderMouseDown(e, 'start')}>
+                    <div className='dot'></div>
+                </div>
+
+                {/* <div className={'commit interactive' + (isDragging ? ' dragging' : '')} style={{ 'left': `${endCommit}%` }} onMouseDown={(e) => onSliderMouseDown(e, 'end')}>
+                    <div className='dot'></div>
+                </div> */}
+
             </div>
-
-            {/* <div className={'commit interactive' + (isDragging ? ' dragging' : '')} style={{ 'left': `${endCommit}%` }} onMouseDown={(e) => onSliderMouseDown(e, 'end')}>
-                <div className='dot'></div>
-            </div> */}
-
         </div>
+
+        <Button variant='ghost' className='h-full' onClick={selectNext.bind(this)}>
+            <ChevronRight />
+        </Button>
     </div>;
 };

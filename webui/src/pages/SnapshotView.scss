@@ -4,7 +4,7 @@
 
     display: grid;
     grid-template-columns: [config] 400px [main] 1fr;
-    grid-template-rows: 1fr 200px;
+    grid-template-rows: 1fr 50px;
     grid-gap: 1rem;
     
     .rendering-overlay {
