@@ -1,0 +1,46 @@
+.snapshot-job-status {
+    position: relative;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    flex-direction: row;
+    gap: 10px;
+
+    .job-status-indicator {
+        width: 30px;
+        height: 30px;
+        border-radius: 50px;
+        border: 1px solid hsl(var(--border));
+        z-index: 1;
+
+        transition: 0.2s background-color;
+
+        &.success {
+            background-color: #A3BE8C;
+        }
+
+        &.in-progress {
+            background-color: #EBCB8B;
+        }
+
+        &.failed {
+            background-color: #BF616A;
+        }
+    }
+
+    .snapshot-job-status-connector {
+        position: absolute;
+        left: 14px;
+        top: 30px;
+
+        width: 2px;
+        height: 40px;
+
+        background-color: hsl(var(--border));
+    }
+}
+
+.snapshot-job-status:last-child .snapshot-job-status-connector {
+    display: none;
+}
+

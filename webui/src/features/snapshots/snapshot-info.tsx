@@ -17,12 +17,21 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger,
-  } from '@/components/ui/alert-dialog';
+} from '@/components/ui/alert-dialog';
+
+import './snapshot-info.scss';
 
 export interface SnapshotInfoProps {
     project: TimelapseProject,
     snapshot: TimelapseSnapshot
 }
+
+const jobs = [
+    { name: 'Init Repository' },
+    { name: 'Compile LaTeX' },
+    { name: 'PDF to Image' },
+    { name: 'Assemble Image' }
+];
 
 export const SnapshotInfo = (props: SnapshotInfoProps) => {
     const { toast } = useToast();
@@ -65,6 +74,20 @@ export const SnapshotInfo = (props: SnapshotInfoProps) => {
         }
     };
 
+    const getStatusIndicatorClass = (job: string) => {
+        const status = props.snapshot.status[job];
+        let className = 'job-status-indicator ';
+        if (status === 'Completed') {
+            className += 'success';
+        } else if (status === 'In Progress') {
+            className += 'in-progress';
+        } else if (status === 'Failed') {
+            className += 'failed';
+        }
+
+        return className;
+    };
+
     return <div className='flex flex-col justify-between w-full h-full'>
 
         <form className='grid w-full items-start gap-6 overflow-y-auto'>
@@ -81,14 +104,27 @@ export const SnapshotInfo = (props: SnapshotInfoProps) => {
                     <Label>SHA</Label>
                     <Input disabled value={props.snapshot.commit_sha} />
 
-                    <Label>Status</Label>
-                    <pre><code>{ JSON.stringify(props.snapshot.status, null, 2) }</code></pre>
-
                     <Label>Includes</Label>
-                    <pre><code>{ JSON.stringify(props.snapshot.includes, null, 2) }</code></pre>
+                    <pre><code>{JSON.stringify(props.snapshot.includes, null, 2)}</code></pre>
+                </div>
+            </fieldset>
 
-                    <Label>Changed Pages</Label>
-                    <pre><code>{ JSON.stringify(props.snapshot, null, 2) }</code></pre>
+            <fieldset className='grid gap-6 rounded-lg border p-4'>
+                <legend className='-ml-1 px-1 text-sm font-medium'>
+                    Compilation Status
+                </legend>
+
+                <div className='flex flex-col gap-10'>
+
+                    {jobs.map((job, index) => (
+                        <div key={index} className='snapshot-job-status'>
+                            <div key={`line-${index}`} className='snapshot-job-status-connector'></div>
+
+                            <div className={getStatusIndicatorClass(job.name)}></div>
+                            <Label className='text-sm'>{job.name}</Label>
+                        </div>
+                    ))}
+
                 </div>
             </fieldset>
 
