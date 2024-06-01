@@ -57,6 +57,10 @@ class InitRepoAction(Action):
 
             resultInclude = snapshot.execute('grep -r \\\\include{ ' + unscanned_files[0], 'latex', True)
             for line in resultInclude.splitlines():
+                # ingore commented files
+                if line.strip().startswith('%'):
+                    continue
+
                 # extract file name
                 file = line.split('{')[1].split('}')[0]
                 if not file.endswith('.tex'):
@@ -65,6 +69,10 @@ class InitRepoAction(Action):
 
             resultInput = snapshot.execute('grep -r \\\\input{ ' + unscanned_files[0], 'latex', True)
             for line in resultInput.splitlines():
+                # ingore commented files
+                if line.strip().startswith('%'):
+                    continue
+
                 # extract file name
                 file = line.split('{')[1].split('}')[0]
                 if not file.endswith('.tex'):
@@ -73,8 +81,15 @@ class InitRepoAction(Action):
 
             resultGraphics = snapshot.execute('grep -r \\\\includegraphics ' + unscanned_files[0], 'latex', True)
             for line in resultGraphics.splitlines():
+                # ingore commented files
+                if line.strip().startswith('%'):
+                    continue
+
+                # find index of 'includegraphics'
+                idx = line.find('\\includegraphics')
+
                 # extract file name
-                file = line.split('{')[1].split('}')[0]
+                file = line[idx:].split('{')[1].split('}')[0]
 
                 # for images, we might need to add the extension
                 has_extension = file.find('.') != -1

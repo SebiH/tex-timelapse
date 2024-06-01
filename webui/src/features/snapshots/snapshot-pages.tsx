@@ -28,9 +28,9 @@ export const SnapshotPages = (props: SnapshotPagesProps) => {
     if (status && status['PDF to Image'] === 'Completed') {
 
         const images = props.snapshot.pages.map((page, index) => {
-            const pageChanged = !!props.snapshot.changed_pages.find(p => p.page === index - 1);
+            const pageChanged = !!props.snapshot.changed_pages.find(p => p.page === index + 1);
             const detailChanges = props.snapshot.changed_pages
-                .filter(p => p.page === index - 1)
+                .filter(p => p.page === index + 1)
                 .map(p => (
                     <div key={p.page} className='snapshot-page-detail-changes' style={{
                         'top': `${p.y1 * pageWidth[0]}px`,
