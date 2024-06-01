@@ -8,7 +8,7 @@ from flask_cors import CORS # type: ignore
 from tex_timelapse.reporters.web_reporter import WebReporter
 from tex_timelapse.compiler import compileSnapshot
 from tex_timelapse.project import Project, init_project, list_projects
-from tex_timelapse.util.serialization import saveToFile
+from tex_timelapse.util.serialization import saveToFile, saveToFileTmp
 
 from .actions.init_repo import InitRepoAction
 from .actions.compile_latex import CompileLatexAction
@@ -31,17 +31,31 @@ class WebServer:
         def listProjects():
             return list(webProjects.keys())
 
-        @self.app.route('/api/projects/<name>')
-        def getProject(name):
+        @self.app.route('/api/projects/<name>', methods=['GET'])
+        def __getProject(name):
             return webProjects[name]
 
-        @self.app.route('/api/projects/<name>', methods=['PUT'])
-        def createProject(name):
-            return True
-
         @self.app.route('/api/projects/<name>', methods=['POST'])
-        def editProject(name):
-            return True
+        def __setProject(name):
+            project = localProjects[name]
+            if request.json:
+                if 'config' in request.json:
+                    project.config = request.json['config']
+                    webProjects[name]['config'] = project.config
+                    saveToFileTmp(f'{project.projectFolder}/project.yaml', project.config)
+                if 'name' in request.json and request.json['name'] != name:
+                    newName = request.json['name']
+                    os.rename(project.projectFolder, f'./projects/{newName}')
+                    project.name = newName
+                    project.projectFolder = f'./projects/{newName}'
+
+                    webProjects[newName] = webProjects.pop(name)
+                    localProjects[newName] = localProjects.pop(name)
+
+                return jsonify({ 'success': True })
+
+            return jsonify({ 'success': False, 'error': 'No data provided' })
+
 
         @self.app.route('/api/projects/<name>/run')
         def runProject(name):

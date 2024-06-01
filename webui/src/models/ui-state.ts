@@ -8,6 +8,7 @@ export const UIState = {
     currentSnapshot: new BehaviorSubject<TimelapseSnapshot | null>(null),
 
     setProject(project: TimelapseProject) {
+        console.log(project?.config);
         if (project !== this.project.value) {
             this.project.next(project);
             this.currentSnapshot.next(project?.snapshots[0]);

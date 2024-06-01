@@ -4,7 +4,7 @@ import { Home, } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link, LoaderFunctionArgs, useLoaderData } from 'react-router-dom';
 import { TimelapseProject } from '@/models/project';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TimelapseView } from './TimelapseView';
 import { VideoView } from './VideoView';
 import { SnapshotView } from './SnapshotView';
@@ -16,10 +16,16 @@ export async function loader({ params }: LoaderFunctionArgs<{ projectName: strin
 }
 
 const Project = () => {
-    const project = useLoaderData() as TimelapseProject;
-    UIState.setProject(project);
-
+    const [ project, setProject ] = useState<TimelapseProject>(useLoaderData() as TimelapseProject);
     const [view, setView] = useState('timelapse');
+
+    useEffect(() => {
+        UIState.setProject(project);
+        const sub = UIState.project.subscribe(p => p && setProject(p));
+
+        return () => sub.unsubscribe();
+    }, []);
+
 
     let currentView = <TimelapseView project={project} />;
     if (view === 'snapshots') {

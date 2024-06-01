@@ -1,9 +1,9 @@
 export type TimelapseConfig = {
-    sourceFolder: string;
-    mainTexFile: string;
-
     rows: number;
     columns: number;
+    videoscale: number;
+    framerate: number;
+
     blur: number;
     highlightChanges: boolean;
 

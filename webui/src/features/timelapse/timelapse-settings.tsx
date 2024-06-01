@@ -1,9 +1,3 @@
-import {
-    Bird,
-    Rabbit,
-    Turtle,
-} from 'lucide-react';
-
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -14,14 +8,77 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { UIState } from '@/models/ui-state';
+import { TimelapseProject } from '@/models/project';
 
-export const TimelapseSettings = () => {
+type TimelapseSettingsProps = {
+    project: TimelapseProject;
+};
+
+const pdflatexCmd = 'latexmk -pdf -interaction=nonstopmode -synctex=1 -f';
+const lualatexCmd = 'latexmk -pdflatex=\'lualatex %O %S\' -pdf -synctex=1 -f';
+const xetexCmd = 'latexmk -pdflatex=\'xelatex %O %S\' -pdf -synctex=1 -f';
+
+const debounce = (func: any, timeout = 300) => {
+    let timer: any;
+    return (...args: any) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => { func.apply(this, args); }, timeout);
+    };
+};
+
+const sendConfig = debounce(async (project: TimelapseProject, config: any) => {
+    // send to server
+    fetch(`/api/projects/${project.name}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config })
+    });
+}, 1000);
+
+
+export const TimelapseSettings = ({ project }: TimelapseSettingsProps) => {
+    const [ config, setConfig ] = useState(project.config);
     const [ compiler, setCompiler ] = useState('pdflatex');
-    const [ cropTwoPage, setCropTwoPage ] = useState(false);
+
+    useEffect(() => {
+        const sub = UIState.project.subscribe(p => {
+            if (p) {
+                setConfig(p.config);
+                if (p.config.latexCmd === pdflatexCmd)
+                    setCompiler('pdflatex');
+                else if (p.config.latexCmd === lualatexCmd)
+                    setCompiler('lualatex');
+                else if (p.config.latexCmd === xetexCmd)
+                    setCompiler('xetex');
+                else
+                    setCompiler('custom');
+            }
+        });
+        return () => sub.unsubscribe();
+    }, []);        
+
+    const updateConfig = (key: string, value: any) => {
+        const newConfig = { ...config, [key]: value };
+        UIState.setProject({ ...project, config: newConfig });
+        sendConfig(project, newConfig);
+    };
+
+    const setCompilerCmd = (mode: string) => {
+        if (mode === 'pdflatex')
+            updateConfig('latexCmd', pdflatexCmd);
+        else if (mode === 'lualatex')
+            updateConfig('latexCmd', lualatexCmd);
+        else if (mode === 'xetex')
+            updateConfig('latexCmd', xetexCmd);
+        else if (mode === 'custom') {
+            updateConfig('latexCmd', '');
+        }
+    };
 
 
     return <form className='grid w-full items-start gap-6'>
@@ -29,15 +86,14 @@ export const TimelapseSettings = () => {
 
             <div className='grid gap-3'>
                 <Label>Compiler</Label>
-                <Select value={compiler} onValueChange={setCompiler.bind(this)}>
+                <Select value={compiler} onValueChange={setCompilerCmd.bind(this)}>
                     <SelectTrigger id='compiler' className='items-start [&_[data-description]]:hidden'>
-                        <SelectValue placeholder='Select a compiler' />
+                        <SelectValue placeholder='Select a latex compiler' />
                     </SelectTrigger>
                     <SelectContent>
 
                         <SelectItem value='pdflatex'>
                             <div className='flex items-start gap-3 text-muted-foreground'>
-                                <Rabbit className='size-5' />
                                 <div className='grid gap-0.5'>
                                     <p>
                                         <span className='font-medium text-foreground'>
@@ -54,7 +110,6 @@ export const TimelapseSettings = () => {
 
                         <SelectItem value='lualatex'>
                             <div className='flex items-start gap-3 text-muted-foreground'>
-                                <Bird className='size-5' />
                                 <div className='grid gap-0.5'>
                                     <p>
                                         <span className='font-medium text-foreground'>
@@ -62,7 +117,7 @@ export const TimelapseSettings = () => {
                                         </span>
                                     </p>
                                     <p className='text-xs' data-description>
-                                        Description goes here.
+                                        LuaLatex compiler for modern templates.
                                     </p>
                                 </div>
                             </div>
@@ -70,7 +125,6 @@ export const TimelapseSettings = () => {
 
                         <SelectItem value='xetex'>
                             <div className='flex items-start gap-3 text-muted-foreground'>
-                                <Turtle className='size-5' />
                                 <div className='grid gap-0.5'>
                                     <p>
                                         <span className='font-medium text-foreground'>
@@ -78,7 +132,7 @@ export const TimelapseSettings = () => {
                                         </span>
                                     </p>
                                     <p className='text-xs' data-description>
-                                        Description goes here.
+                                        XeTeX compiler for custom projects.
                                     </p>
                                 </div>
                             </div>
@@ -86,7 +140,6 @@ export const TimelapseSettings = () => {
 
                         <SelectItem value='custom'>
                             <div className='flex items-start gap-3 text-muted-foreground'>
-                                <Turtle className='size-5' />
                                 <div className='grid gap-0.5'>
                                     <p>
                                         <span className='font-medium text-foreground'>
@@ -105,12 +158,11 @@ export const TimelapseSettings = () => {
 
                 {compiler === 'custom' && <div className='grid gap-3'>
                     <Label htmlFor='custom-compiler'>Custom Compiler</Label>
-                    <Textarea id='custom-compiler' placeholder='latexmk -pdflua -interaction=nonstopmode -synctex=1 -f' />
+                    <Textarea id='custom-compiler' value={config.latexCmd}
+                        onChange={e => updateConfig('latexCmd', e.target.value)}
+                        placeholder='latexmk -pdf -interaction=nonstopmode -synctex=1 -f' />
                 </div>}
             </div>
-
-
-
         </fieldset>
 
 
@@ -123,22 +175,22 @@ export const TimelapseSettings = () => {
             <div className='grid grid-cols-2 gap-4'>
                 <div className='grid gap-3'>
                     <Label>Rows</Label>
-                    <Input type='number' placeholder='3' />
+                    <Input type='number' placeholder='3' value={config.rows} onChange={e => updateConfig('rows', e.target.value)} min={1} />
                 </div>
                 <div className='grid gap-3'>
                     <Label>Columns</Label>
-                    <Input type='number' placeholder='4' />
+                    <Input type='number' placeholder='4' value={config.columns} onChange={e => updateConfig('columns', e.target.value)} min={1} />
                 </div>
             </div>
 
             <div className='grid grid-cols-2 gap-4'>
                 <div className='grid gap-3'>
                     <Label>Video Framerate</Label>
-                    <Input type='number' placeholder='3' />
+                    <Input type='number' placeholder='4' value={config.framerate} onChange={e => updateConfig('framerate', e.target.value)} min={1} />
                 </div>
                 <div className='grid gap-3'>
                     <Label>Estimated Duration</Label>
-                    <Input value='4:50' disabled />
+                    <Input value={new Date(project.snapshots.length / Math.max(1, config.framerate) * 1000).toISOString().slice(11, 19)} disabled />
                 </div>
             </div>
 
@@ -151,50 +203,62 @@ export const TimelapseSettings = () => {
 
             <div className='grid gap-3'>
                 <div className="flex items-center space-x-2">
-                    <Switch/>
+                    <Switch checked={config.highlightChanges} onCheckedChange={v => updateConfig('highlightChanges', v)} />
                     <Label>Highlight Changes</Label>
                 </div>
             </div>
 
             <div className='grid gap-3'>
-                <Label>Blur</Label>
-                <Slider min={0} max={10} step={1} />
+                <Label>Gaussian Blur</Label>
+                <div className='flex items-center gap-3'>
+                    <Slider min={0} max={20} step={0.1} value={[config.blur]} onValueChange={v => updateConfig('blur', v[0])} />
+                    <Label className='text-xs'>{ config.blur }</Label>
+                </div>
             </div>
 
             <Separator />
 
             <div className='grid gap-3'>
-                <Label>Crop Images</Label>
                 <div className="flex items-center space-x-2">
-                    <Switch checked={cropTwoPage} onCheckedChange={setCropTwoPage.bind(this)} />
-                    <Label>Two-Page Cropping</Label>
+                    <Switch checked={config.crop} onCheckedChange={v => updateConfig('crop', v)} />
+                    <Label>Crop Page Margins</Label>
                 </div>
             </div>
 
 
-            <div className='grid grid-cols-2 gap-4'>
+            {config.crop && <>
                 <div className='grid gap-3'>
-                    <Label>Crop Top { cropTwoPage && '(even)' }</Label>
-                    <Input type='number' placeholder='3' />
+                    <div className="flex items-center space-x-2">
+                        <Switch checked={config.cropTwoPage} onCheckedChange={v => updateConfig('cropTwoPage', v)} />
+                        <Label>Two-Page Cropping</Label>
+                    </div>
                 </div>
-                <div className='grid gap-3'>
-                    <Label>Crop Bottom { cropTwoPage && '(even)' }</Label>
-                    <Input type='number' placeholder='4' />
-                </div>
-            </div>
 
-            <div className='grid grid-cols-2 gap-4'>
-                <div className='grid gap-3'>
-                    <Label>Crop Left { cropTwoPage && '(even)' }</Label>
-                    <Input type='number' placeholder='3' />
-                </div>
-                <div className='grid gap-3'>
-                    <Label>Crop Right { cropTwoPage && '(even)' }</Label>
-                    <Input type='number' placeholder='4' />
-                </div>
-            </div>
 
-            {cropTwoPage && <>
+                <div className='grid grid-cols-2 gap-4'>
+                    <div className='grid gap-3'>
+                        <Label>Crop Top {config.cropTwoPage && '(even)'}</Label>
+                        <Input type='number' placeholder='3' />
+                    </div>
+                    <div className='grid gap-3'>
+                        <Label>Crop Bottom {config.cropTwoPage && '(even)'}</Label>
+                        <Input type='number' placeholder='4' />
+                    </div>
+                </div>
+
+                <div className='grid grid-cols-2 gap-4'>
+                    <div className='grid gap-3'>
+                        <Label>Crop Left {config.cropTwoPage && '(even)'}</Label>
+                        <Input type='number' placeholder='3' />
+                    </div>
+                    <div className='grid gap-3'>
+                        <Label>Crop Right {config.cropTwoPage && '(even)'}</Label>
+                        <Input type='number' placeholder='4' />
+                    </div>
+                </div>
+            </>}
+
+            {config.crop && config.cropTwoPage && <>
                 <div className='grid grid-cols-2 gap-4'>
                     <div className='grid gap-3'>
                         <Label>Crop Top (odd)</Label>

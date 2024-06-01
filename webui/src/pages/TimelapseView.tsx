@@ -29,7 +29,7 @@ export const TimelapseView = (props: TimelapseViewProps) => {
     return <main className='grid flex-1 gap-4 overflow-none p-4 project-view-grid'>
 
         <div className='relative hidden flex-col items-start gap-8 md:flex max-h-full overflow-y-auto project-view-config'>
-            <TimelapseSettings />
+            <TimelapseSettings project={props.project} />
         </div>
 
 
