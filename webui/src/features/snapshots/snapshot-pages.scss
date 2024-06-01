@@ -6,13 +6,20 @@
 
 .snapshot-page-preview {
     position: relative;
+    overflow: hidden;
 }
 
 .snapshot-page-changed {
     position: absolute;
     background-color: #A3BE8C;
-    opacity: 0.5;
+    opacity: 0.25;
     width: 100%;
     height: 100%;
+}
+
+.snapshot-page-detail-changes {
+    position: absolute;
+    background-color: #81A1C1;
+    opacity: 0.2;
 }
 

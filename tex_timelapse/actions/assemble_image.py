@@ -72,12 +72,13 @@ class AssembleImageAction(Action):
         #         images[i] = images[i].crop((130, 130, 1080, 1380))
 
         if self.highlightChanges:
-            
+            image_width, image_height = images[0].size
+
             # highlight entire pages first
             for synctexInfo in snapshot.changed_pages:
                 page_num = int(synctexInfo['page'])
                 if page_num and page_num <= len(drawImages):
-                    drawImages[page_num - 1] = Image.new('RGBA', images[0].size, '#A3BE8C66')
+                    drawImages[page_num - 1] = Image.new('RGBA', images[0].size, '#A3BE8C44')
 
             # draw in more detailed changes
             for synctexInfo in snapshot.changed_pages:
@@ -93,7 +94,13 @@ class AssembleImageAction(Action):
                 x, y, h, v, W, H = self.convert_synctex_to_image_coords(f'{workDir}/latex/{pdfFile}', f'{workDir}/images/{snapshot.pages[page_num - 1]}', synctexInfo)
 
                 padding = 25
-                draw.rectangle((h - padding, v - padding, h + W + padding, v + H + padding), fill = '#0000ff55')
+                draw.rectangle((h - padding, v - padding, h + W + padding, v + H + padding), fill = '#81A1C144')
+
+                # for webui
+                synctexInfo['x1'] = float(h - padding) / float(image_width)
+                synctexInfo['y1'] = float(v - padding) / float(image_height)
+                synctexInfo['x2'] = float(h + W + padding) / float(image_width)
+                synctexInfo['y2'] = float(v + H + padding) / float(image_height)
 
             # combine overlays
             for i in range(len(images)):
