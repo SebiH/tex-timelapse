@@ -68,7 +68,7 @@ def compileSnapshot(project: Project, snapshot_sha: str, actions: List[Action], 
     return snapshot
 
 
-def compileProject(project: Project, output: str, actions: List[Action], reporter: Reporter):
+def compileProject(project: Project, output: str, actions: List[Action], reporter: Reporter) -> None:
 
     prevAction = ''
     for action in actions:
@@ -77,9 +77,9 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
         snapshots = [s for s in project.snapshots if canRun(prevAction, action, s)]
         reporter.set_stage(action.getName(), len(snapshots))
 
-        # pool.map(lambda snapshot: runAction(action, snapshot, reporter), snapshots)
-        for snapshot in snapshots:
-            runAction(action, snapshot, reporter)
+        pool.map(lambda snapshot: runAction(action, snapshot, reporter), snapshots)
+        # for snapshot in snapshots:
+        #     runAction(action, snapshot, reporter)
 
         # successful snapshots
         num_successful = len([s for s in snapshots if s.status[action.getName()] == SnapshotStatus.COMPLETED])

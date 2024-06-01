@@ -1,12 +1,13 @@
 from os import path
 import os
+from shutil import rmtree
 from flask import Flask, jsonify, send_file
 from flask import request
 from flask_socketio import SocketIO # type: ignore
 from flask_cors import CORS # type: ignore
 
 from tex_timelapse.reporters.web_reporter import WebReporter
-from tex_timelapse.compiler import compileSnapshot
+from tex_timelapse.compiler import compileProject, compileSnapshot
 from tex_timelapse.project import Project, init_project, list_projects
 from tex_timelapse.util.serialization import saveToFile, saveToFileTmp
 
@@ -58,9 +59,36 @@ class WebServer:
 
 
         @self.app.route('/api/projects/<name>/run')
-        def runProject(name):
-            print(request.form)
-            return list_projects()
+        def __runProject(name):
+            project = localProjects[name]
+            try:
+                jobs = [
+                    InitRepoAction(),
+                    CompileLatexAction(),
+                    PdfToImageAction(),
+                    AssembleImageAction()
+                ]
+
+                compileProject(project, 'test', jobs, WebReporter(self.socketio))
+
+                # update snapshot in project snapshots
+                project.initSnapshots()
+                webProjects[name]['snapshots'] = [snapshot.to_dict() for snapshot in project.snapshots]
+
+                return { 'success': True }
+            except Exception as e:
+                return { 'success': False, 'error': str(e) }
+
+        @self.app.route('/api/projects/<name>/reset')
+        def __resetProject(name):
+            project = localProjects[name]
+            try:
+                rmtree(f'{project.projectFolder}/snapshots', ignore_errors=True)
+                project.initSnapshots()
+                webProjects[name]['snapshots'] = [snapshot.to_dict() for snapshot in project.snapshots]
+                return { 'success': True, 'snapshots': webProjects[name]['snapshots'] }
+            except Exception as e:
+                return { 'success': False, 'error': str(e) }
 
         @self.app.route('/api/projects/<name>/snapshot/<snapshot_sha>/run')
         def __compileSnapshot(name, snapshot_sha):
