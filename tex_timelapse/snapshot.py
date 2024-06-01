@@ -1,6 +1,7 @@
 from datetime import datetime
 import subprocess
 import os
+import shlex
 
 class SnapshotStatus(object):
     PENDING = "Pending"
@@ -30,12 +31,12 @@ class Snapshot:
     def getWorkDir(self) -> str:
         return os.path.join(self.project_dir, 'snapshots', self.commit_sha)
 
-    def execute(self, cmd: str, sub_folder: str = '', ignore_error = False) -> str:
+    def execute(self, cmd: str, sub_folder: str = '', ignore_error = False, posix=False) -> str:
         cwd = self.getWorkDir()
         if sub_folder is not None:
             cwd = os.path.join(cwd, sub_folder)
 
-        output = subprocess.run(cmd.split(), cwd=cwd, capture_output=True, text=True)
+        output = subprocess.run(shlex.split(cmd, posix=posix), cwd=cwd, capture_output=True, text=True)
         if output.returncode != 0 and not ignore_error:
             self.error = output.stderr
             raise Exception(f"Command '{cmd}' failed with error: {output.stderr}")

@@ -34,8 +34,8 @@ type TimelapseSettingsProps = {
 };
 
 const pdflatexCmd = 'latexmk -pdf -interaction=nonstopmode -synctex=1 -f';
-const lualatexCmd = 'latexmk -pdflatex=\'lualatex %O %S\' -pdf -synctex=1 -f';
-const xetexCmd = 'latexmk -pdflatex=\'xelatex %O %S\' -pdf -synctex=1 -f';
+const lualatexCmd = 'latexmk -pdflatex=\'lualatex %O %S\' -interaction=nonstopmode -pdf -synctex=1 -f';
+const xetexCmd = 'latexmk -pdflatex=\'xelatex %O %S\' -interaction=nonstopmode -pdf -synctex=1 -f';
 
 const debounce = (func: any, timeout = 300) => {
     let timer: any;

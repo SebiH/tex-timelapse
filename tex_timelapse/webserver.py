@@ -131,6 +131,7 @@ class WebServer:
                     raise Exception(f"Snapshot {snapshot_sha} not found")
 
                 # reset all jobs, starting from the last one in case earlier jobs depend on later ones
+                snapshot.error = ''
                 for job in reversed(jobs):
                     job.reset(snapshot)
                     snapshot.status[job.getName()] = None

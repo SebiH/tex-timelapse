@@ -7,7 +7,7 @@ import os
 
 class CompileLatexAction(Action):
     def getName(self) -> str:
-        return "Compile LaTeX"
+        return 'Compile LaTeX'
 
     def init(self, project: Project) -> None:
         self.latexCmd = project.config['latexCmd']
@@ -23,11 +23,17 @@ class CompileLatexAction(Action):
         installCmd = f'texliveonfly {texFile}'
 
         # ignore errors in case it somehow still compiled
-        snapshot.execute(installCmd, "latex", True)
+        snapshot.execute(installCmd, 'latex', True)
 
-        compileCmd = f"{self.latexCmd} {texFile}"
+        compileCmd = f'{self.latexCmd} {texFile}'
         # ignore errors in case it somehow still compiled
-        snapshot.execute(compileCmd, "latex", True)
+        output = snapshot.execute(compileCmd, 'latex', ignore_error=True, posix=True)
+
+        # check if the compilation was successful by checking if there's a pdf file
+        pdfFile = texFile[:-4] + '.pdf'
+        if not os.path.exists(f'{workDir}/latex/{pdfFile}'):
+            snapshot.error = output
+            return SnapshotStatus.FAILED
 
         # git format example: @@ -33,5 55,4 @@
         #                         ^  ^ ^  ^
@@ -40,7 +46,7 @@ class CompileLatexAction(Action):
         for file, diff in snapshot.gitDiff.items():
             changedFiles[file] = set()
 
-            if file.endswith(".tex"):
+            if file.endswith('.tex'):
                 # The following code extracts these values and puts both removed and added lines into the changedLines array
                 gitDiffResults = re.finditer(r'@@\s+-(\d+),?(\d*)\s+\+(\d+),?(\d*)\s+@@', diff)
                 for match in gitDiffResults:
@@ -52,23 +58,22 @@ class CompileLatexAction(Action):
                 # since we might've added a file ending (but \includegraphics doesn't have to have one), we'll remove it again.
                 # TODO: this assumes a file ending of 4 characters, which is not always the case
                 basefile = file[:-4]
-                if basefile.startswith("./"):
+                if basefile.startswith('./'):
                     basefile = basefile[2:]
 
                 # assuming it's an image file, all \includegraphics{...} lines are considered changed
                 # TODO: potential issues:
                 # - does not work if filename has a space in it -> execute should use array instead of string
-                # - \includegraphics could be commented out
                 # - \includegraphics could be split over multiple lines
                 # - \includegraphics could be in in a macro
                 # - we need to consider \graphicspath{...}
                 occurrences = snapshot.execute(f'grep -rn \\\\includegraphics.*{basefile} .', 'latex', True)
 
-                # this returns something like "file.tex:123:\includegraphics{file}"
+                # this returns something like 'file.tex:123:\includegraphics{file}'
                 # -> we only need the line number and the file name
                 for occurrence in occurrences.splitlines():
-                    file = occurrence.split(":")[0]
-                    line = int(occurrence.split(":")[1])
+                    file = occurrence.split(':')[0]
+                    line = int(occurrence.split(':')[1])
                     if changedFiles.get(file) is None:
                         changedFiles[file] = set()
 
@@ -78,16 +83,16 @@ class CompileLatexAction(Action):
         changesPages = []
         for file, changedLines in changedFiles.items():
             # convert the git changed lines to pages using synctex
-            pdfFile = texFile[:-4] + ".pdf"
+            pdfFile = texFile[:-4] + '.pdf'
             for line in changedLines:
                 filePath = file
-                if not filePath.startswith("./"):
-                    filePath = "./" + filePath
+                if not filePath.startswith('./'):
+                    filePath = './' + filePath
 
                 synctexCmd = f'synctex view -i {line}:0:{os.path.abspath(workDir)}/{filePath} -o {pdfFile}'
-                output = snapshot.execute(synctexCmd, "latex")
+                output = snapshot.execute(synctexCmd, 'latex')
 
-                pattern = r"Page:(?P<page>\d+)\nx:(?P<x>\d+\.?\d*)\ny:(?P<y>\d+\.?\d*)\nh:(?P<h>\d+\.?\d*)\nv:(?P<v>\d+\.?\d*)\nW:(?P<W>\d+\.?\d*)\nH:(?P<H>\d+\.?\d*)"
+                pattern = r'Page:(?P<page>\d+)\nx:(?P<x>\d+\.?\d*)\ny:(?P<y>\d+\.?\d*)\nh:(?P<h>\d+\.?\d*)\nv:(?P<v>\d+\.?\d*)\nW:(?P<W>\d+\.?\d*)\nH:(?P<H>\d+\.?\d*)'
                 synctexMatch = re.finditer(pattern, output, flags=re.MULTILINE)
 
                 for m in synctexMatch:
@@ -108,7 +113,7 @@ class CompileLatexAction(Action):
         return SnapshotStatus.COMPLETED
 
     def reset(self, snapshot: Snapshot) -> None:
-        pdfFile = snapshot.main_tex_file[:-4] + ".pdf"
+        pdfFile = snapshot.main_tex_file[:-4] + '.pdf'
         snapshot.changed_pages = []
 
         try:
