@@ -75,7 +75,7 @@ class CompileLatexAction(Action):
                     changedFiles[file].add(line)
 
 
-        changedPages = set()
+        changesPages = []
         for file, changedLines in changedFiles.items():
             # convert the git changed lines to pages using synctex
             pdfFile = texFile[:-4] + ".pdf"
@@ -87,22 +87,23 @@ class CompileLatexAction(Action):
                 synctexCmd = f'synctex view -i {line}:0:{os.path.abspath(workDir)}/{filePath} -o {pdfFile}'
                 output = snapshot.execute(synctexCmd, "latex")
 
-                result = re.search(r"Page:(\d*)", output, flags=re.MULTILINE)
-                if (result):
-                    page = int(result.group(1))
-                    changedPages.add(page)
+                pattern = r"Page:(?P<page>\d+)\nx:(?P<x>\d+\.?\d*)\ny:(?P<y>\d+\.?\d*)\nh:(?P<h>\d+\.?\d*)\nv:(?P<v>\d+\.?\d*)\nW:(?P<W>\d+\.?\d*)\nH:(?P<H>\d+\.?\d*)"
+                synctexMatch = re.finditer(pattern, output, flags=re.MULTILINE)
 
-                # TODO: interpret this output correctly other than the page?
-                # x = float(re.search(r"x:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
-                # y = float(re.search(r"y:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
-                # h = float(re.search(r"h:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
-                # v = float(re.search(r"v:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
-                # W = float(re.search(r"W:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
-                # H = float(re.search(r"H:(\d*\.?\d*)", out, flags=re.MULTILINE).group(1))
+                for m in synctexMatch:
+                    changesPages.append({
+                        'page': int(m.group('page')),
+                        'x': float(m.group('x')),
+                        'y': float(m.group('y')),
+                        'h': float(m.group('h')),
+                        'v': float(m.group('v')),
+                        'W': float(m.group('W')),
+                        'H': float(m.group('H')),
+                    })
 
 
         # write pages back to file for later processing
-        snapshot.changed_pages = list(changedPages)
+        snapshot.changed_pages = changesPages
 
         return SnapshotStatus.COMPLETED
 

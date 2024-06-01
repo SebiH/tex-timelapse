@@ -23,7 +23,8 @@ class Snapshot:
 
         self.pages: list[str] = []
         self.gitDiff: dict = {} # file -> changedLines
-        self.changed_pages: list[int] = []
+        self.changed_pages: list[dict] = []
+        self.changed_pages_test: list[list[float]] = []
 
 
     def getWorkDir(self) -> str:
