@@ -2,11 +2,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { BugPlay, Trash } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { TimelapseSnapshot } from '@/models/snapshot';
 import { TimelapseProject } from '@/models/project';
 import { UIState } from '@/models/ui-state';
-import { ToastAction } from '@radix-ui/react-toast';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -37,23 +36,25 @@ const jobs = [
 ];
 
 export const SnapshotInfo = (props: SnapshotInfoProps) => {
-    const { toast } = useToast();
-
     const resetSnapshot = async () => {
         const commitSha = props.snapshot.commit_sha;
         const success = await UIState.resetSnapshot(commitSha);
 
         if (success) {
-            toast({
-                title: 'Success!',
+            toast.success('Reset successful', {
                 description: 'Snapshot reset successfully',
-                action: <ToastAction altText="View" onClick={() => UIState.setCurrentSnapshot(commitSha)}>Go to snapshot</ToastAction>,
+                action: {
+                    label: 'View',
+                    onClick: () => UIState.setCurrentSnapshot(commitSha),
+                }
             });
         } else {
-            toast({
-                title: 'Error',
+            toast.error('Error', {
                 description: 'Snapshot could not be reset',
-                action: <ToastAction altText="View" onClick={() => UIState.setCurrentSnapshot(commitSha)}>Go to snapshot</ToastAction>,
+                action: {
+                    label: 'View',
+                    onClick: () => UIState.setCurrentSnapshot(commitSha),
+                }
             });
         }
     };
@@ -63,16 +64,20 @@ export const SnapshotInfo = (props: SnapshotInfoProps) => {
         const success = await UIState.compileSnapshot(commitSha);
 
         if (success) {
-            toast({
-                title: 'Success!',
+            toast.success('Compilation successful', {
                 description: 'Snapshot compiled successfully',
-                action: <ToastAction altText="View" onClick={() => UIState.setCurrentSnapshot(commitSha)}>Go to snapshot</ToastAction>,
+                action: {
+                    label: 'View',
+                    onClick: () => UIState.setCurrentSnapshot(commitSha),
+                }
             });
         } else {
-            toast({
-                title: 'Error',
+            toast.error('Compilation error', {
                 description: 'Snapshot could not be compiled',
-                action: <ToastAction altText="View" onClick={() => UIState.setCurrentSnapshot(commitSha)}>Go to snapshot</ToastAction>,
+                action: {
+                    label: 'View',
+                    onClick: () => UIState.setCurrentSnapshot(commitSha),
+                }
             });
         }
     };

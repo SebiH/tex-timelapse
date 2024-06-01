@@ -8,7 +8,6 @@ export const UIState = {
     currentSnapshot: new BehaviorSubject<TimelapseSnapshot | null>(null),
 
     setProject(project: TimelapseProject) {
-        console.log(project?.config);
         if (project !== this.project.value) {
             this.project.next(project);
             this.currentSnapshot.next(project?.snapshots[0]);
@@ -85,7 +84,6 @@ socket.on('stage', ({ stage, length }: { stage: string, length: number }) => {
 });
 
 socket.on('add_progress', ({ snapshot }: { snapshot: TimelapseSnapshot }) => {
-    console.log('add_progress', snapshot);
     const project = UIState.project.value;
     if (project)
         UIState.updateSnapshot(project, snapshot);

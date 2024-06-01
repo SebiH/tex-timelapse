@@ -4,7 +4,7 @@ import Root from './pages/Root';
 import ProjectList, { loader as projectListLoader } from './pages/ProjectList';
 import { TooltipProvider } from '@radix-ui/react-tooltip';
 import Project, { loader as projectLoader } from './pages/Project';
-import { Toaster } from './components/ui/toaster';
+import { Toaster } from './components/ui/sonner';
 import { NewProjectPage } from './pages/NewProjectPage';
 
 const router = createBrowserRouter([

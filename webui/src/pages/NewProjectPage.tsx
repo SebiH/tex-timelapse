@@ -29,7 +29,7 @@ import { Separator } from '@/components/ui/separator';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
@@ -44,7 +44,6 @@ const FormSchema = z.object({
 
 export const NewProjectPage = () => {
     const navigate = useNavigate(); 
-    const { toast } = useToast();
     const [ isUploading, setIsUploading ] = useState(false);
 
     const onSubmit = async (data: z.infer<typeof FormSchema>) => {
@@ -69,12 +68,12 @@ export const NewProjectPage = () => {
             }
 
             // navigate to new project page
-            toast({ title: 'Project imported successfully' });
+            toast.success('Project imported successfully');
             navigate(`/projects/${result.name}`);
 
         } catch (error) {
             console.error('There was a problem with the fetch operation:', error);
-            toast({ title: 'Failed to import project', variant: 'destructive' });
+            toast.error('Failed to import project');
         }
 
         setIsUploading(false);
