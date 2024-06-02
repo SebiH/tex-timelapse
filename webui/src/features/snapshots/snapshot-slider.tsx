@@ -45,21 +45,25 @@ export const SnapshotSlider = ({ snapshots, mode, startSnapshot, endSnapshot }: 
     const getPosition = (time: number) => (time - min) / (max - min) * 100;
 
     const commitDots = snapshots.map(s => {
-        const style = { left: `${getPosition(s.commit_date)}%`, 'backgroundColor': '#D8DEE9' };
-
-        for (const job of jobs) {
-            if (s.status[job.name] === 'In Progress') {
-                style['backgroundColor'] = '#EBCB8B';
-            } else if (s.status[job.name] === 'Completed') {
-                style['backgroundColor'] = '#A3BE8C';
-            } else if (s.status[job.name] === 'Failed') {
-                style['backgroundColor'] = '#BF616A';
+        const getJobColor = (job: string) => {
+            if (s.status[job] === 'In Progress') {
+                return '#EBCB8B';
+            } else if (s.status[job] === 'Completed') {
+                return '#A3BE8C';
+            } else if (s.status[job] === 'Failed') {
+                return '#BF616A';
             }
-        }
+            return '#D8DEE9';
+        };
+
+        const style = { left: `${getPosition(s.commit_date)}%`, 'backgroundColor': '#D8DEE9' };
 
         const classNames = `snapshot ${mode === 'single' && 'interactive'} ${startSnapshot === s && 'selected'}`;
         return <div className={classNames} style={style} key={s.commit_sha} onClick={() => selectSnapshot(s)}>
-            <div className='dot'></div>
+                <div className="segment top-left" style={{ 'backgroundColor': getJobColor(jobs[0].name) }}></div>
+                <div className="segment top-right" style={{ 'backgroundColor': getJobColor(jobs[1].name) }}></div>
+                <div className="segment bottom-left" style={{ 'backgroundColor': getJobColor(jobs[3].name) }}></div>
+                <div className="segment bottom-right" style={{ 'backgroundColor': getJobColor(jobs[2].name) }}></div>
             {/* <div className='label'>{commit.date.toLocaleTimeString()}</div> */}
         </div>;
     });
