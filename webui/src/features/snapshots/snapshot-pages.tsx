@@ -18,7 +18,8 @@ import { useState } from 'react';
 
 export interface SnapshotPagesProps {
     project: TimelapseProject,
-    snapshot: TimelapseSnapshot
+    snapshot: TimelapseSnapshot,
+    blur?: number
 }
 
 export const SnapshotPages = (props: SnapshotPagesProps) => {
@@ -47,6 +48,7 @@ export const SnapshotPages = (props: SnapshotPagesProps) => {
 
                     <img src={`/api/projects/${props.project.name}/snapshot/${props.snapshot.commit_sha}/image/${page}`}
                         className='max-w-full'
+                        style={{ 'filter': `blur(${props.blur}px)` }}
                         alt={`Page ${index}`}
                     />
                 </div>

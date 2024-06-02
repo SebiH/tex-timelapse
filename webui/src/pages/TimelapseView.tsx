@@ -41,7 +41,7 @@ export const TimelapseView = (props: TimelapseViewProps) => {
                 </div>
             </div>}
 
-            <SnapshotPages project={props.project} snapshot={startSnapshot} />
+            <SnapshotPages project={props.project} snapshot={startSnapshot} blur={props.project.config.blur} />
 
             <Badge variant='outline' className='absolute left-3 top-3 bg-white'>
                 Preview
