@@ -86,7 +86,7 @@ class AssembleImageAction(Action):
                 texFile = snapshot.main_tex_file
                 pdfFile = texFile[:-4] + '.pdf'
 
-                x, y, h, v, W, H = self.convert_synctex_to_image_coords(f'{workDir}/{pdfFile}', f'{workDir}/{snapshot.pages[page_num - 1]}', synctexInfo)
+                x, y, h, v, W, H = self.convert_synctex_to_image_coords(f'{workDir}/{pdfFile}', f'{snapshot.pages[page_num - 1]}', synctexInfo)
 
                 padding = 25
 
