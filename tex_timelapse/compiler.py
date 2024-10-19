@@ -88,13 +88,12 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
     rmtree(f"{project.projectFolder}/workdir", ignore_errors=True)
 
     # render video
-    reporter.set_stage("Rendering video", 1)
+    reporter.set_stage("Rendering video", 100)
     os.makedirs(f'{project.projectFolder}/frames', exist_ok=True)
 
     os.makedirs(f'{project.projectFolder}/output', exist_ok=True)
     framerate = project.config['framerate']
-    cmd = f"""
-        ffmpeg -y -framerate {framerate}
+    cmd = f"""ffmpeg -y -framerate {framerate}
         -pattern_type glob -i {project.projectFolder}/frames/*.png
         -c:v libx264 -movflags +faststart
         -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2:0:0:white

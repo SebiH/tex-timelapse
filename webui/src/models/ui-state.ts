@@ -10,6 +10,10 @@ export const UIState = {
     setProject(project: TimelapseProject) {
         if (project !== this.project.value) {
             this.project.next(project);
+            for (const snapshot of project?.snapshots || []) {
+                snapshot.pages = snapshot.pages.sort();
+            }
+
             this.currentSnapshot.next(project?.snapshots[0]);
         }
     },
@@ -39,6 +43,7 @@ export const UIState = {
     },
 
     updateSnapshot(project: TimelapseProject, snapshot: TimelapseSnapshot) {
+        snapshot.pages = snapshot.pages.sort();
         const index = project.snapshots.findIndex(s => s.commit_sha === snapshot.commit_sha);
         const nextProject: TimelapseProject = {
             ...project,
