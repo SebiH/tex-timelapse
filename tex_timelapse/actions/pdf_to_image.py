@@ -9,26 +9,28 @@ class PdfToImageAction(Action):
         return 'PDF to Image'
 
     def init(self, project: Project) -> None:
+        self.img_dir = f'{project.projectFolder}/images'
         pass
 
     def cleanup(self) -> None:
         pass
 
     def run(self, snapshot: Snapshot) -> str:
-        os.makedirs(f'{snapshot.getWorkDir()}/images', exist_ok=True)
+        os.makedirs(self.img_dir, exist_ok=True)
 
         pdfFile = snapshot.main_tex_file[:-4] + '.pdf'
-        cmd = f'pdftoppm -png latex/{pdfFile} images/page'
+        # create images folder
+        os.makedirs(snapshot.getWorkDir() + '/images', exist_ok=True)
+
+        cmd = f'pdftoppm -png {pdfFile} images/page'
         snapshot.execute(cmd)
 
         # save pages for use in the webserver
-        images = snapshot.execute('find .', 'images', ignore_error=True)
-        
-        # since files are prefixed with ./, we remove the first two characters
-        snapshot.pages = [f[2:] for f in images.split('\n') if f.endswith('.png')]
+        images = snapshot.execute('find images/', ignore_error=True)
+        snapshot.pages = [f"{snapshot.getWorkDir()}/{f}" for f in images.split('\n') if f.endswith('.png')]
 
         return SnapshotStatus.COMPLETED
 
     def reset(self, snapshot: Snapshot) -> None:
         snapshot.pages = []
-        rmtree(f'{snapshot.getWorkDir()}/images', ignore_errors=True)
+        rmtree(self.img_dir, ignore_errors=True)

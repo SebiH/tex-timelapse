@@ -42,7 +42,7 @@ class AssembleImageAction(Action):
 
     def run(self, snapshot: Snapshot) -> str:
         workDir = snapshot.getWorkDir()
-        rawImages = sorted(glob(f'{workDir}/images/page-*.png'))
+        rawImages = sorted(snapshot.pages)
 
         if self.blur > 0:
             images = [Image.open(i).filter(ImageFilter.GaussianBlur(self.blur)) for i in rawImages]
@@ -86,7 +86,7 @@ class AssembleImageAction(Action):
                 texFile = snapshot.main_tex_file
                 pdfFile = texFile[:-4] + '.pdf'
 
-                x, y, h, v, W, H = self.convert_synctex_to_image_coords(f'{workDir}/latex/{pdfFile}', f'{workDir}/images/{snapshot.pages[page_num - 1]}', synctexInfo)
+                x, y, h, v, W, H = self.convert_synctex_to_image_coords(f'{workDir}/{pdfFile}', f'{workDir}/{snapshot.pages[page_num - 1]}', synctexInfo)
 
                 padding = 25
 
@@ -108,13 +108,13 @@ class AssembleImageAction(Action):
                 images[i] = Image.alpha_composite(images[i].convert('RGBA'), drawImages[i])
 
         img = pil_grid(images, self.columns)
-        img.save(f'{snapshot.project_dir}/frames/frame_{snapshot.commit_date}.png')
+        img.save(f'{snapshot.project_dir}/frames/frame_{snapshot.index}.png')
 
         return SnapshotStatus.COMPLETED
 
     def reset(self, snapshot: Snapshot) -> None:
         try:
-            image_path = f'{snapshot.project_dir}/frames/frame_{snapshot.commit_date}.png'
+            image_path = f'{snapshot.project_dir}/frames/frame_{snapshot.index}.png'
             os.remove(image_path)
         except:  # noqa: E722
             pass

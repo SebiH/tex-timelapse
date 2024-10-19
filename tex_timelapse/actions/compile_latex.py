@@ -23,15 +23,15 @@ class CompileLatexAction(Action):
         installCmd = f'texliveonfly {texFile}'
 
         # ignore errors in case it somehow still compiled
-        snapshot.execute(installCmd, 'latex', True)
+        snapshot.execute(installCmd, ignore_error=True)
 
         compileCmd = f'{self.latexCmd} {texFile}'
         # ignore errors in case it somehow still compiled
-        output = snapshot.execute(compileCmd, 'latex', ignore_error=True, posix=True)
+        output = snapshot.execute(compileCmd, ignore_error=True, posix=True)
 
         # check if the compilation was successful by checking if there's a pdf file
         pdfFile = texFile[:-4] + '.pdf'
-        if not os.path.exists(f'{workDir}/latex/{pdfFile}'):
+        if not os.path.exists(f'{workDir}/{pdfFile}'):
             snapshot.error = output
             return SnapshotStatus.FAILED
 
@@ -67,7 +67,7 @@ class CompileLatexAction(Action):
                 # - \includegraphics could be split over multiple lines
                 # - \includegraphics could be in in a macro
                 # - we need to consider \graphicspath{...}
-                occurrences = snapshot.execute(f'grep -rn \\\\includegraphics.*{basefile} .', 'latex', True)
+                occurrences = snapshot.execute(f'grep -rn \\\\includegraphics.*{basefile} .', ignore_error=True)
 
                 # this returns something like 'file.tex:123:\includegraphics{file}'
                 # -> we only need the line number and the file name
@@ -90,7 +90,7 @@ class CompileLatexAction(Action):
                     filePath = './' + filePath
 
                 synctexCmd = f'synctex view -i {line}:0:{os.path.abspath(workDir)}/{filePath} -o {pdfFile}'
-                output = snapshot.execute(synctexCmd, 'latex')
+                output = snapshot.execute(synctexCmd)
 
                 pattern = r'Page:(?P<page>\d+)\nx:(?P<x>\d+\.?\d*)\ny:(?P<y>\d+\.?\d*)\nh:(?P<h>\d+\.?\d*)\nv:(?P<v>\d+\.?\d*)\nW:(?P<W>\d+\.?\d*)\nH:(?P<H>\d+\.?\d*)'
                 synctexMatch = re.finditer(pattern, output, flags=re.MULTILINE)
@@ -112,13 +112,7 @@ class CompileLatexAction(Action):
 
         return SnapshotStatus.COMPLETED
 
-    def reset(self, snapshot: Snapshot) -> None:
-        pdfFile = snapshot.main_tex_file[:-4] + '.pdf'
-        snapshot.changed_pages = []
 
-        try:
-            # remove all generated latex files
-            os.remove(f'{snapshot.getWorkDir()}/latex/{pdfFile}')
-            snapshot.execute('rm -f *.aux *.log *.out *.synctex.gz', 'latex', True)
-        except:  # noqa: E722
-            pass
+    def reset(self, snapshot: Snapshot) -> None:
+        # automatically resets due to compilation in temp. runner
+        pass

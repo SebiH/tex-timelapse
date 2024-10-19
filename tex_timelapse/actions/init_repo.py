@@ -1,7 +1,6 @@
 from tex_timelapse.actions.action import Action
 from tex_timelapse.project import Project
 from tex_timelapse.snapshot import Snapshot, SnapshotStatus
-from shutil import rmtree, copytree
 
 
 class InitRepoAction(Action):
@@ -9,16 +8,15 @@ class InitRepoAction(Action):
         return "Init Repository"
 
     def init(self, project: Project) -> None:
-        self.sourceFolder = f'{project.projectFolder}/source'
+        pass
 
     def cleanup(self) -> None:
         pass
 
     def run(self, snapshot: Snapshot) -> str:
-        workDir = snapshot.getWorkDir()
-        copytree(f'{self.sourceFolder}/.git', f'{workDir}/latex/.git', dirs_exist_ok=True)
+        # workDir = snapshot.getWorkDir()
         cmd = f'git reset --hard {snapshot.commit_sha}'
-        snapshot.execute(cmd, "latex")
+        snapshot.execute(cmd)
 
         snapshot.main_tex_file = self.findMainTexFile(snapshot)
         snapshot.includes = self.findIncludedFiles(snapshot)
@@ -26,17 +24,15 @@ class InitRepoAction(Action):
         # check for any changes to highlight them in the final output
         for file in snapshot.includes:
             diffCmd = f'git diff --unified=0 HEAD HEAD~1 {file}'
-            diffOutput = snapshot.execute(diffCmd, "latex", True)
+            diffOutput = snapshot.execute(diffCmd, ignore_error=True)
             if diffOutput != "":
                 snapshot.gitDiff[file] = diffOutput
 
-        # save space
-        rmtree(f'{workDir}/latex/.git')
         return SnapshotStatus.COMPLETED
 
 
     def findMainTexFile(self, snapshot: Snapshot) -> str:
-        result = snapshot.execute('find . -name *.tex -exec grep -l \\\\begin{document} {} +', 'latex')
+        result = snapshot.execute('find . -name *.tex -exec grep -l \\\\begin{document} {} +')
         if result == "":
             raise Exception("Could not find main .tex file")
 
@@ -55,7 +51,7 @@ class InitRepoAction(Action):
         while len(unscanned_files) > 0:
             new_files = []
 
-            resultInclude = snapshot.execute('grep -r \\\\include{ ' + unscanned_files[0], 'latex', True)
+            resultInclude = snapshot.execute('grep -r \\\\include{ ' + unscanned_files[0], ignore_error=True)
             for line in resultInclude.splitlines():
                 # ingore commented files
                 if line.strip().startswith('%'):
@@ -67,7 +63,7 @@ class InitRepoAction(Action):
                     file += '.tex'
                 new_files.append(file.strip())
 
-            resultInput = snapshot.execute('grep -r \\\\input{ ' + unscanned_files[0], 'latex', True)
+            resultInput = snapshot.execute('grep -r \\\\input{ ' + unscanned_files[0], ignore_error=True)
             for line in resultInput.splitlines():
                 # ingore commented files
                 if line.strip().startswith('%'):
@@ -79,7 +75,7 @@ class InitRepoAction(Action):
                     file += '.tex'
                 new_files.append(file.strip())
 
-            resultGraphics = snapshot.execute('grep -r \\\\includegraphics ' + unscanned_files[0], 'latex', True)
+            resultGraphics = snapshot.execute('grep -r \\\\includegraphics ' + unscanned_files[0], ignore_error=True)
             for line in resultGraphics.splitlines():
                 # ingore commented files
                 if line.strip().startswith('%'):
@@ -96,7 +92,7 @@ class InitRepoAction(Action):
                 if has_extension:
                     new_files.append(file.strip())
                 else:
-                    possible_files = snapshot.execute(f'find . -wholename *{file}.*', 'latex')
+                    possible_files = snapshot.execute(f'find . -wholename *{file}.*')
                     for pf in possible_files.splitlines():
                         new_files.append(pf.strip())
 
@@ -114,5 +110,3 @@ class InitRepoAction(Action):
     def reset(self, snapshot: Snapshot) -> None:
         snapshot.gitDiff = {}
         snapshot.includes = []
-        cwd = snapshot.getWorkDir()
-        rmtree(f'{cwd}/latex', ignore_errors=True)

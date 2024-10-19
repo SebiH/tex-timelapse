@@ -8,7 +8,7 @@ from slugify import slugify
 
 from tex_timelapse.config import Config
 from tex_timelapse.snapshot import Snapshot
-from tex_timelapse.util.serialization import loadFromFile
+from tex_timelapse.util.serialization import loadFromFile, saveToFile2
 
 def init_project(name: str, source: str) -> str:
     print(f"Initializing project '{name}' with default values...")
@@ -65,28 +65,33 @@ class Project:
     def initSnapshots(self):
         self.snapshots = []
 
-        # Load existing snapshots
-        for file in glob(f'{self.projectFolder}/snapshots/**/snapshot.yaml'):
-            sDict = loadFromFile(file)
-            if sDict:
-                snapshot = Snapshot("", "", None)
+        # Load existing snapshots if file exists
+        if os.path.exists(f'{self.projectFolder}/snapshots.yaml'):
+            sDicts = loadFromFile(f'{self.projectFolder}/snapshots.yaml')
+            for sDict in sDicts:
+                snapshot = Snapshot("", "", None, -1)
                 snapshot.__dict__ = sDict # TODO: is there a better way to do this?
                 self.snapshots.append(snapshot)
-        print(f"Loaded {len(self.snapshots)} existing snapshots")
+            print(f"Loaded {len(self.snapshots)} existing snapshots")
 
         # Check if there are any missing snapshots
         repo = git.Repo(os.path.join(self.projectFolder, 'source'))
         missingCounter = 0
-        for commit in list(repo.iter_commits()):
+        indexCounter = len(self.snapshots)
+        for commit in reversed(list(repo.iter_commits())):
             if commit.hexsha not in [snapshot.commit_sha for snapshot in self.snapshots]:
                 missingCounter += 1
-                sDict = Snapshot(self.projectFolder, commit.hexsha, commit.authored_date)
+                sDict = Snapshot(self.projectFolder, commit.hexsha, commit.authored_date, indexCounter)
+                indexCounter += 1
                 self.snapshots.append(sDict)
         
         print(f"Added {missingCounter} missing snapshots")
 
+        if missingCounter > 0:
+            saveToFile2(f'{self.projectFolder}/snapshots.yaml', self.snapshots)
+
         # order snapshots by date
-        self.snapshots.sort(key=lambda x: x.commit_date)
+        self.snapshots.sort(key=lambda x: x.index)
 
 
 def list_projects() -> list[str]:

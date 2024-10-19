@@ -18,6 +18,15 @@ def saveToFile(filePath: str, obj: object) -> bool:
             YAML().dump(obj.__dict__, file)
             return True
         return False
+
+def saveToFile2(filePath: str, snapshots: list) -> bool:
+        folder = os.path.dirname(filePath)
+        os.makedirs(folder, exist_ok=True)
+
+        with open(filePath, 'w') as file:
+            YAML().dump([obj.__dict__ for obj in snapshots], file)
+            return True
+        return False
     
 def loadFromFile(path: str):
     with open(path, 'r') as file:
