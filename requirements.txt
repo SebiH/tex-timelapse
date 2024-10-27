@@ -4,7 +4,8 @@ alive_progress
 ffmpeg-progress-yield
 gitpython
 numpy
-ruamel.yaml
+pyyaml
+types-PyYAML
 python-slugify
 types-python-slugify
 flask

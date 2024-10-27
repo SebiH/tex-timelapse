@@ -4,7 +4,7 @@ import argparse
 
 from tex_timelapse.reporters.terminal_reporter import TerminalReporter
 from tex_timelapse.compiler import compileProject
-from tex_timelapse.project import Project, init_project, list_projects
+from tex_timelapse.project import Project
 from tex_timelapse.snapshot import SnapshotStatus
 from tex_timelapse.webserver import WebServer
 
@@ -104,8 +104,8 @@ def runProject(name: str, output: str, args):
 
 def listProjects():
     print("Available projects:")
-    for project in list_projects():
-        print(f" - {project}")
+    for project in Project.list():
+        print(f" - {project.name} ({len(project.snapshots)} snapshots)")
 
 
 ############################
@@ -115,7 +115,7 @@ def listProjects():
 args = parser.parse_args()
 
 if (args.action == 'init'):
-    init_project(args.project, args.source)
+    Project.create(args.project, args.source)
 elif (args.action == 'run'):
     runProject(args.project, args.output, args)
 elif (args.action == 'list'):

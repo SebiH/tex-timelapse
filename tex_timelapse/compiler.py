@@ -1,4 +1,3 @@
-import datetime
 import os
 import threading
 import concurrent.futures
@@ -9,8 +8,13 @@ from shutil import rmtree, copytree
 from tex_timelapse.project import Project
 from tex_timelapse.reporter import Reporter
 from tex_timelapse.snapshot import Snapshot, SnapshotStatus
-from tex_timelapse.util.serialization import saveToFile2
 from tex_timelapse.actions.action import Action
+
+executor = concurrent.futures.ThreadPoolExecutor()
+
+def setThreads(threads: int) -> None:
+    global executor
+    executor = concurrent.futures.ThreadPoolExecutor(threads)
 
 def canRun(prevAction: str, action: Action, snapshot: Snapshot) -> bool:
     if prevAction != '':
@@ -24,35 +28,6 @@ def canRun(prevAction: str, action: Action, snapshot: Snapshot) -> bool:
 
     return True
 
-
-def compileSnapshot(project: Project, snapshot_sha: str, actions: List[Action], reporter: Reporter) -> Snapshot:
-    return Snapshot("", "", datetime.datetime.now(), 0) # TODO
-    # matching_snapshot = [s for s in project.snapshots if s.commit_sha == snapshot_sha]
-
-    # if len(matching_snapshot) == 0:
-    #     raise Exception(f"Snapshot {snapshot_sha} not found")
-    # if len(matching_snapshot) > 1:
-    #     raise Exception(f"Snapshot {snapshot_sha} found multiple times")
-
-    # snapshot = matching_snapshot[0]
-    # # TODO: snapshot.status = SnapshotStatus.PENDING
-    # # TODO: snapshot.error = ''
-
-    # prevAction = ''
-    # for action in actions:
-    #     if not canRun(prevAction, action, snapshot):
-    #         continue
-
-    #     snapshot.error = ''
-    #     action.init(project)
-
-    #     # Run job
-    #     reporter.set_stage(action.getName(), 1)
-    #     runAction(action, snapshot, reporter)
-    #     action.cleanup()
-    #     prevAction = action.getName()
-    
-    # return snapshot
 
 
 def initFolder(project: Project, id: int) -> str:
@@ -71,16 +46,15 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
     reporter.set_stage("Compiling snapshots", len(project.snapshots))
 
     try:
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = []
-            for snapshot in project.snapshots:
-                future = executor.submit(compileSnapshot2, project, snapshot, actions, reporter)
-                futures.append(future)
-            
-            for future in concurrent.futures.as_completed(futures):
-                future.result()
+        futures = []
+        for snapshot in project.snapshots:
+            future = executor.submit(compileSnapshot, project, snapshot, actions, reporter)
+            futures.append(future)
+        
+        for future in concurrent.futures.as_completed(futures):
+            future.result()
 
-            saveToFile2(f'{project.projectFolder}/snapshots.yaml', project.snapshots)
+        Snapshot.serialize(f'{project.projectFolder}/snapshots.yaml', project.snapshots)
 
     except Exception as e:
         print(f"Error: {e}")
@@ -106,7 +80,7 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
 
 
 
-def compileSnapshot2(project: Project, snapshot: Snapshot, actions: List[Action], reporter: Reporter) -> None:
+def compileSnapshot(project: Project, snapshot: Snapshot, actions: List[Action], reporter: Reporter) -> None:
     thread_id = threading.get_ident()
 
     workDir = initFolder(project, thread_id)

@@ -1,78 +1,34 @@
+from dataclasses import dataclass
 import subprocess
 from glob import glob
 import os
 import shutil
-from typing import List
+from typing import Any, Dict, List, Optional
 import git
 from slugify import slugify
 
 from tex_timelapse.config import Config
 from tex_timelapse.snapshot import Snapshot
-from tex_timelapse.util.serialization import loadFromFile, saveToFile2
+import yaml
 
-def init_project(name: str, source: str) -> str:
-    print(f"Initializing project '{name}' with default values...")
-    
-    # create folder
-    folder = f'./projects/{slugify(name)}'
-    os.makedirs(folder, exist_ok=True)
-
-    # init source folder
-    os.makedirs(f'{folder}/source', exist_ok=True)
-
-    # extract source zip into source folder
-    if source.endswith('.zip'):
-        shutil.unpack_archive(source, f'{folder}/source')
-    else:
-        raise Exception(f"Currently only zip source files are supported. Got: {source}")
-
-    # clean up git for faster processing
-    cmd = 'git gc --aggressive'
-
-    output = subprocess.run(cmd.split(), cwd=f'{folder}/source', capture_output=False, text=True)
-    if output.returncode != 0:
-        raise Exception(f"'{cmd}' failed with error: {output.stderr}")
-
-    # copy default config
-    shutil.copyfile('./default_config.yaml', f'{folder}/project.yaml')
-
-    # output
-    print(f"Project '{name}' successfully initialized in '{folder}'. Please edit the project.yaml file, then run:")
-    print(f"tex-timelapse run {name} <output>")
-
-    return slugify(name)
-
-
+@dataclass
 class Project:
     name: str
     projectFolder: str
     config: Config
 
     def __init__(self, name: str):
-        self.name = slugify(name)
-        self.projectFolder = f'./projects/{self.name}'
-
-        default_values = {
-            'todo': 'todo',
-        }
-        full_config = {**default_values, **loadFromFile(f'{self.projectFolder}/project.yaml')}
-
-        self.config = Config(**full_config)
-
+        self.name = name
+        self.projectFolder = f'./projects/{slugify(self.name)}'
         self.snapshots: List[Snapshot] = []
-        self.initSnapshots()
 
-    def initSnapshots(self):
+    def loadSnapshots(self):
         self.snapshots = []
 
         # Load existing snapshots if file exists
         if os.path.exists(f'{self.projectFolder}/snapshots.yaml'):
-            sDicts = loadFromFile(f'{self.projectFolder}/snapshots.yaml')
-            for sDict in sDicts:
-                snapshot = Snapshot("", "", None, -1)
-                snapshot.__dict__ = sDict # TODO: is there a better way to do this?
-                self.snapshots.append(snapshot)
-            print(f"Loaded {len(self.snapshots)} existing snapshots")
+            self.snapshots = Snapshot.deserialize(f'{self.projectFolder}/snapshots.yaml')
+            print(f"Loaded {len(self.snapshots)} existing snapshots for project {self.name}")
 
         # Check if there are any missing snapshots
         repo = git.Repo(os.path.join(self.projectFolder, 'source'))
@@ -88,14 +44,77 @@ class Project:
         print(f"Added {missingCounter} missing snapshots")
 
         if missingCounter > 0:
-            saveToFile2(f'{self.projectFolder}/snapshots.yaml', self.snapshots)
+            Snapshot.serialize(f'{self.projectFolder}/snapshots.yaml', self.snapshots)
 
-        # order snapshots by date
         self.snapshots.sort(key=lambda x: x.index)
 
 
-def list_projects() -> list[str]:
-    return [
-        os.path.dirname(file).removeprefix('projects/')
-        for file in glob('projects/**/project.yaml', recursive=True)
-    ]
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            'name': self.name,
+            'config': self.config
+        }
+
+    @staticmethod
+    def list() -> list['Project']:
+        return [
+            Project.deserialize(file)
+            for file in glob('projects/**/project.yaml', recursive=True)
+        ]
+    
+    @staticmethod
+    def deserialize(name: str, defaults: Optional[Dict[str, Any]] = None) -> 'Project':
+        with open(f'./projects/{slugify(name)}/project.yaml', 'r') as f:
+            data = yaml.safe_load(f)
+
+        if defaults is None:
+            defaults = {}
+
+        project_data = {**defaults, **data}
+
+        project = Project(project_data["name"])
+        project.config = project_data["config"]
+        return project
+
+
+    @staticmethod
+    def create(name: str, source: str) -> 'Project':
+        print(f'Creating project "{name}" with default values...')
+        
+        project = Project(name)
+        
+        # create folder
+        folder = f'./projects/{slugify(name)}'
+        os.makedirs(folder, exist_ok=True)
+
+        # init source folder
+        os.makedirs(f'{folder}/source', exist_ok=True)
+
+        # extract source zip into source folder
+        if source.endswith('.zip'):
+            shutil.unpack_archive(source, f'{folder}/source')
+        else:
+            raise Exception(f'Currently only zip source files are supported. Got: {source}')
+
+        # clean up git for faster processing
+        cmd = 'git gc --aggressive'
+
+        output = subprocess.run(cmd.split(), cwd=f'{folder}/source', capture_output=False, text=True)
+        if output.returncode != 0:
+            raise Exception(f'"{cmd}" failed with error: {output.stderr}')
+
+        # load default config
+        with open('./default_config.yaml', 'r') as f:
+            project.config = yaml.safe_load(f)
+
+        project.serialize()
+
+        # output
+        print(f'Project "{name}" successfully initialized in "{folder}". Please edit the project.yaml file, then run:')
+        print(f'tex-timelapse run {name} <output>')
+
+        return project
+
+    def serialize(self):
+        with open(f'{self.projectFolder}/project.yaml', 'w') as f:
+            yaml.dump(self.to_dict(), f, default_flow_style=False)
