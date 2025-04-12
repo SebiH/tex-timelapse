@@ -35,6 +35,7 @@ class AssembleImageAction(Action):
         self.rows = int(project.config['rows'])
         self.columns = int(project.config['columns'])
         self.highlightChanges = bool(project.config['highlightChanges'])
+        self.project_img_dir = f'{project.projectFolder}/frames'
         pass
 
     def cleanup(self) -> None:
@@ -52,9 +53,11 @@ class AssembleImageAction(Action):
         if (len(images) == 0):
             raise Exception(f'No images found for {snapshot.commit_sha}')
 
+        image_size = images[0].size
+
         # Fill array with empty images if there are not enough pages
         while (len(images) < self.rows * self.columns):
-            images.append(Image.new('RGB', (1275, 1651), color='white'))
+            images.append(Image.new('RGB', image_size, color='white'))
         # Remove unnecessary pages that wouldn't fit in the frame
         while ((len(images)) > self.rows * self.columns):
             images.pop()
@@ -108,13 +111,13 @@ class AssembleImageAction(Action):
                 images[i] = Image.alpha_composite(images[i].convert('RGBA'), drawImages[i])
 
         img = pil_grid(images, self.columns)
-        img.save(f'{snapshot.project_dir}/frames/frame_{snapshot.index}.png')
+        img.save(f'{self.project_img_dir}/frame_{snapshot.index:09d}.png')
 
         return SnapshotStatus.COMPLETED
 
     def reset(self, snapshot: Snapshot) -> None:
         try:
-            image_path = f'{snapshot.project_dir}/frames/frame_{snapshot.index}.png'
+            image_path = f'{self.project_img_dir}/frame_{snapshot.index:09d}.png'
             os.remove(image_path)
         except:  # noqa: E722
             pass

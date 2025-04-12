@@ -76,7 +76,8 @@ serverParser = subparsers.add_parser('server', help='Server')
 
 def runProject(name: str, output: str, args):
     print(f"Running project '{name}'...")
-    project = Project(name)
+    project = Project.deserialize(name)
+    project.loadSnapshots()
 
     from tex_timelapse.actions.init_repo import InitRepoAction
     from tex_timelapse.actions.compile_latex import CompileLatexAction

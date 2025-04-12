@@ -23,7 +23,10 @@ class WebServer:
 
         @self.app.route('/api/projects')
         def listProjects():
-            return [p.name for p in Project.list()]
+            try:
+                return {"success": True, "projects": [p.name for p in Project.list()]}
+            except Exception as e:
+                return {"success": False, "error": str(e)}
 
         @self.app.route('/api/projects/<name>', methods=['GET'])
         def __getProject(name):
@@ -206,7 +209,7 @@ class WebServer:
             return jsonify(
                 {
                     "message": "Project imported successfully",
-                    "project": self.to_json(project)
+                    "project": project.to_dict()
                 }
             ), 200
 

@@ -16,7 +16,7 @@ class InitRepoAction(Action):
     def run(self, snapshot: Snapshot) -> str:
         # workDir = snapshot.getWorkDir()
         cmd = f'git reset --hard {snapshot.commit_sha}'
-        snapshot.execute(cmd)
+        snapshot.execute_cmd(cmd)
 
         snapshot.main_tex_file = self.findMainTexFile(snapshot)
         snapshot.includes = self.findIncludedFiles(snapshot)
@@ -24,7 +24,7 @@ class InitRepoAction(Action):
         # check for any changes to highlight them in the final output
         for file in snapshot.includes:
             diffCmd = f'git diff --unified=0 HEAD HEAD~1 {file}'
-            diffOutput = snapshot.execute(diffCmd, ignore_error=True)
+            diffOutput = snapshot.execute_cmd(diffCmd, ignore_error=True)
             if diffOutput != "":
                 snapshot.gitDiff[file] = diffOutput
 
@@ -32,7 +32,7 @@ class InitRepoAction(Action):
 
 
     def findMainTexFile(self, snapshot: Snapshot) -> str:
-        result = snapshot.execute('find . -name *.tex -exec grep -l \\\\begin{document} {} +')
+        result = snapshot.execute_cmd('find . -name *.tex -exec grep -l \\\\begin{document} {} +')
         if result == "":
             raise Exception("Could not find main .tex file")
 
@@ -51,7 +51,7 @@ class InitRepoAction(Action):
         while len(unscanned_files) > 0:
             new_files = []
 
-            resultInclude = snapshot.execute('grep -r \\\\include{ ' + unscanned_files[0], ignore_error=True)
+            resultInclude = snapshot.execute_cmd('grep -r \\\\include{ ' + unscanned_files[0], ignore_error=True)
             for line in resultInclude.splitlines():
                 # ingore commented files
                 if line.strip().startswith('%'):
@@ -63,7 +63,7 @@ class InitRepoAction(Action):
                     file += '.tex'
                 new_files.append(file.strip())
 
-            resultInput = snapshot.execute('grep -r \\\\input{ ' + unscanned_files[0], ignore_error=True)
+            resultInput = snapshot.execute_cmd('grep -r \\\\input{ ' + unscanned_files[0], ignore_error=True)
             for line in resultInput.splitlines():
                 # ingore commented files
                 if line.strip().startswith('%'):
@@ -75,7 +75,7 @@ class InitRepoAction(Action):
                     file += '.tex'
                 new_files.append(file.strip())
 
-            resultGraphics = snapshot.execute('grep -r \\\\includegraphics ' + unscanned_files[0], ignore_error=True)
+            resultGraphics = snapshot.execute_cmd('grep -r \\\\includegraphics ' + unscanned_files[0], ignore_error=True)
             for line in resultGraphics.splitlines():
                 # ingore commented files
                 if line.strip().startswith('%'):
@@ -92,7 +92,7 @@ class InitRepoAction(Action):
                 if has_extension:
                     new_files.append(file.strip())
                 else:
-                    possible_files = snapshot.execute(f'find . -wholename *{file}.*')
+                    possible_files = snapshot.execute_cmd(f'find . -wholename *{file}.*')
                     for pf in possible_files.splitlines():
                         new_files.append(pf.strip())
 

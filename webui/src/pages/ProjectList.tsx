@@ -7,7 +7,21 @@ import { Button } from '@/components/ui/button';
 import { CirclePlus } from 'lucide-react';
 
 export async function loader() {
-    return await fetch('/api/projects');
+        const response = await fetch('/api/projects');
+        if (!response.ok) {
+            // TODO: Show error message to user
+            console.log('Network response was not ok');
+            return [];
+        } else {
+            const result = await response.json();
+            if (!result || !result.success) {
+                // TODO: Show error message to user
+                console.log('Network response was not ok', result);
+                return [];
+            } else {
+                return result.projects;
+            }
+        }
 }
 
 const ProjectList = () => {

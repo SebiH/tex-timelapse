@@ -23,11 +23,11 @@ class CompileLatexAction(Action):
         installCmd = f'texliveonfly {texFile}'
 
         # ignore errors in case it somehow still compiled
-        snapshot.execute(installCmd, ignore_error=True)
+        snapshot.execute_cmd(installCmd, ignore_error=True)
 
         compileCmd = f'{self.latexCmd} {texFile}'
         # ignore errors in case it somehow still compiled
-        output = snapshot.execute(compileCmd, ignore_error=True, posix=True)
+        output = snapshot.execute_cmd(compileCmd, ignore_error=True, posix=True)
 
         # check if the compilation was successful by checking if there's a pdf file
         pdfFile = texFile[:-4] + '.pdf'
@@ -67,7 +67,7 @@ class CompileLatexAction(Action):
                 # - \includegraphics could be split over multiple lines
                 # - \includegraphics could be in in a macro
                 # - we need to consider \graphicspath{...}
-                occurrences = snapshot.execute(f'grep -rn \\\\includegraphics.*{basefile} .', ignore_error=True)
+                occurrences = snapshot.execute_cmd(f'grep -rn \\\\includegraphics.*{basefile} .', ignore_error=True)
 
                 # this returns something like 'file.tex:123:\includegraphics{file}'
                 # -> we only need the line number and the file name
@@ -90,7 +90,7 @@ class CompileLatexAction(Action):
                     filePath = './' + filePath
 
                 synctexCmd = f'synctex view -i {line}:0:{os.path.abspath(workDir)}/{filePath} -o {pdfFile}'
-                output = snapshot.execute(synctexCmd)
+                output = snapshot.execute_cmd(synctexCmd)
 
                 pattern = r'Page:(?P<page>\d+)\nx:(?P<x>\d+\.?\d*)\ny:(?P<y>\d+\.?\d*)\nh:(?P<h>\d+\.?\d*)\nv:(?P<v>\d+\.?\d*)\nW:(?P<W>\d+\.?\d*)\nH:(?P<H>\d+\.?\d*)'
                 synctexMatch = re.finditer(pattern, output, flags=re.MULTILINE)

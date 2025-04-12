@@ -70,7 +70,7 @@ class Snapshot:
             data = yaml.safe_load(file)
         
         snapshots: list['Snapshot'] = []
-        for snap in data:
+        for snap in data if data is not None else []:
             snapshot = Snapshot(
                 commit_sha=snap["commit_sha"],
                 commit_date=snap["commit_date"],
