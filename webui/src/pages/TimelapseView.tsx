@@ -1,11 +1,3 @@
-import { Textarea } from '@/components/ui/textarea';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
-
-import { Button } from '@/components/ui/button';
 import { TimelapseProject } from '@/models/project';
 import { useState } from 'react';
 import { SnapshotSlider } from '@/features/snapshots/snapshot-slider';

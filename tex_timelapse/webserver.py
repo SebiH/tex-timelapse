@@ -31,14 +31,18 @@ class WebServer:
         @self.app.route('/api/projects/<name>', methods=['GET'])
         def __getProject(name):
             try :
-                return { 'success': True, 'project': Project.deserialize(name).to_dict() }
+                project = Project.deserialize(name)
+                project_dict = project.to_dict()
+                project.loadSnapshots()
+                project_dict['snapshots'] = [snapshot.to_dict() for snapshot in project.snapshots]
+                return { 'success': True, 'project': project_dict }
             except Exception as e:
                 return { 'success': False, 'error': str(e) }
 
         @self.app.route('/api/projects/<name>', methods=['POST'])
         def __setProject(name):
             try:
-                project = Project.deserialize(name)           
+                project = Project.deserialize(name)
                 if request.json:
                     if 'config' in request.json:
                         project.config = request.json['config']

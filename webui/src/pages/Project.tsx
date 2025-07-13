@@ -12,7 +12,17 @@ import { UIState } from '@/models/ui-state';
 
 
 export async function loader({ params }: LoaderFunctionArgs<{ projectName: string }>) {
-    return await fetch(`/api/projects/${params.projectName}`);
+    const query = await fetch(`/api/projects/${params.projectName}`);
+    if (!query.ok) {
+        throw new Response('Project not found', { status: 404 });
+    }
+
+    const result = await query.json();
+    if (!result.project || result.success !== true) {
+        throw new Response('Error loading project', { status: 404 });
+    }
+
+    return result.project as TimelapseProject;
 }
 
 const Project = () => {
