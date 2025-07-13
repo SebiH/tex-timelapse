@@ -1,31 +1,21 @@
-import { Link, useLoaderData } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 import './ProjectList.scss';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '@/components/ui/button';
 import { CirclePlus } from 'lucide-react';
-
-export async function loader() {
-        const response = await fetch('/api/projects');
-        if (!response.ok) {
-            // TODO: Show error message to user
-            console.log('Network response was not ok');
-            return [];
-        } else {
-            const result = await response.json();
-            if (!result || !result.success) {
-                // TODO: Show error message to user
-                console.log('Network response was not ok', result);
-                return [];
-            } else {
-                return result.projects;
-            }
-        }
-}
+import { useQuery } from '@tanstack/react-query';
 
 const ProjectList = () => {
-    const projectNames = useLoaderData() as string[] || [];
+    const { data, isLoading, isError, isSuccess } = useQuery({
+        queryKey: ['projects'],
+        queryFn: async () => {
+            const data = await fetch('/api/projects');
+            const response = await data.json();
+            return response.projects as string[];
+        }
+    });
 
     return (
         <div className='centered-container'>
@@ -36,7 +26,9 @@ const ProjectList = () => {
             </div>
 
             <div className='project-list'>
-                {projectNames.map((projectName) => (
+                {isLoading && <div className='loading-indicator'></div>}
+                {isError && <div className='error-message'>Failed to load projects.</div>}
+                {isSuccess && data?.map((projectName) => (
                     <Link to={`/projects/${projectName}`} className='project-link' key={projectName}>
                         <div className='project-entry'>
                             {projectName}

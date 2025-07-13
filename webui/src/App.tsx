@@ -1,11 +1,14 @@
 import './App.scss';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Root from './pages/Root';
-import ProjectList, { loader as projectListLoader } from './pages/ProjectList';
+import ProjectList from './pages/ProjectList';
 import { TooltipProvider } from '@radix-ui/react-tooltip';
 import Project, { loader as projectLoader } from './pages/Project';
 import { Toaster } from './components/ui/sonner';
 import { NewProjectPage } from './pages/NewProjectPage';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
     {
@@ -15,7 +18,6 @@ const router = createBrowserRouter([
             {
                 index: true,
                 element: <ProjectList />,
-                loader: projectListLoader
             },
 
             {
@@ -36,10 +38,12 @@ const router = createBrowserRouter([
 const App = () => {
     return (
         <div className="App bg-muted/40">
-            <TooltipProvider>
-                <RouterProvider router={router} />
-            </TooltipProvider>
-            <Toaster />
+            <QueryClientProvider client={queryClient}>
+                <TooltipProvider>
+                    <RouterProvider router={router} />
+                </TooltipProvider>
+                <Toaster />
+            </QueryClientProvider>
         </div>
     );
 };

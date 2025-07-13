@@ -27,7 +27,6 @@ class Snapshot:
         self.pages: list[str] = []
         self.gitDiff: dict = {} # file -> changedLines
         self.changed_pages: list[dict] = []
-        self.changed_pages_test: list[list[float]] = []
 
     def setWorkDir(self, work_dir: str) -> None:
         self.work_dir = work_dir
