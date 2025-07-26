@@ -8,7 +8,7 @@ class InitRepoAction(Action):
         return "Init Repository"
 
     def init(self, project: Project) -> None:
-        pass
+        self.concatCommits = project.config['concatCommits']
 
     def cleanup(self) -> None:
         pass
@@ -21,9 +21,11 @@ class InitRepoAction(Action):
         snapshot.main_tex_file = self.findMainTexFile(snapshot)
         snapshot.includes = self.findIncludedFiles(snapshot)
 
+        diffHistory = 1 if self.concatCommits == 0 else self.concatCommits
+
         # check for any changes to highlight them in the final output
         for file in snapshot.includes:
-            diffCmd = f'git diff --unified=0 HEAD HEAD~1 {file}'
+            diffCmd = f'git diff --unified=0 HEAD HEAD~{diffHistory} {file}'
             diffOutput = snapshot.execute_cmd(diffCmd, ignore_error=True)
             if diffOutput != "":
                 snapshot.gitDiff[file] = diffOutput

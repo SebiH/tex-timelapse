@@ -24,5 +24,6 @@ class WebReporter(Reporter):
         self.socketio.emit('set_progress', { 'set': num })
 
     def log(self, msg: str, snapshot: Optional[Snapshot] = None) -> None:
+        print(f"Log: {msg}")
         snapshot_sha = snapshot.commit_sha if snapshot is not None else None
         self.socketio.emit('log', { 'msg': msg, 'snapshot_sha': snapshot_sha })

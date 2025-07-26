@@ -27,6 +27,8 @@ class Config(TypedDict, total=False):
     cropAltTop: int
     cropAltBottom: int
 
+    concatCommits: int
+
     # TODO: maybe change to latexMode: pdflatex | luaLaTeX | xelatex...?
     latexCmd: str
 

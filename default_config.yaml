@@ -29,6 +29,9 @@ cropAltBottom: 0
 # TODO: add comments
 latexCmd: latexmk -pdf -interaction=nonstopmode -synctex=1 -f
 
+# How many commits to concatenate into one snapshot. 0 means no concatenation.
+concatCommits: 0
+
 text_replacements:
   - old: '³'
     new: '3'

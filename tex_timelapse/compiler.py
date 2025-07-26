@@ -28,17 +28,48 @@ def cleanupFolder(project: Project, folder: str) -> None:
     rmtree(f"{folder}/latex", ignore_errors=True)
 
 def compileProject(project: Project, output: str, actions: List[Action], reporter: Reporter) -> None:
+    snapshot_count = len(project.snapshots)
+    if project.config['concatCommits'] > 0:
+        snapshot_count = snapshot_count // project.config['concatCommits']
 
-    reporter.set_stage("Compiling snapshots", len(project.snapshots))
+    reporter.set_stage("Compiling snapshots", snapshot_count)
+
+    # skip commits if concat commits is enabled, but start with the first commit
+    skip_count = project.config['concatCommits']
 
     try:
-        futures = []
+        pending_snapshots = []
         for snapshot in project.snapshots:
-            future = executor.submit(compileSnapshot, project, snapshot, actions, reporter)
-            futures.append(future)
-        
-        for future in concurrent.futures.as_completed(futures):
-            future.result()
+            # skip # of commits if concat commits is enabled
+            if project.config['concatCommits'] > 0 and skip_count < project.config['concatCommits']:
+                skip_count += 1
+                continue
+            pending_snapshots.append(snapshot)
+            skip_count = 0
+
+        retry_count = 0
+
+        while len(pending_snapshots) > 0 and retry_count < project.config['concatCommits'] // 2:
+            futures = []
+            for snapshot in pending_snapshots:
+                future = executor.submit(compileSnapshot, project, snapshot, actions, reporter)
+                futures.append(future)
+
+            retry_count += 1
+            pending_snapshots = []
+
+            # Await results from compilation
+            for future in concurrent.futures.as_completed(futures):
+                completed_snapshot = future.result()
+                
+                # retry compilation if we skipped commits from concatention anyway
+                if project.config['concatCommits'] > 0 and completed_snapshot.status == SnapshotStatus.FAILED:
+                    # progressively try previous snapshots if available - maybe we can find a working one
+                    snapshot_index = next((i for i, snapshot in enumerate(project.snapshots) if snapshot.commit_sha == completed_snapshot.commit_sha), -1)
+                    if snapshot_index > 0:
+                        previous_snapshot = project.snapshots[snapshot_index - 1]
+                        pending_snapshots.append(previous_snapshot)
+                        reporter.log(f'Retrying snapshot {completed_snapshot.commit_sha} ({retry_count}/{project.config["concatCommits"] // 2})')
 
         Snapshot.serialize(f'{project.projectFolder}/snapshots.yaml', project.snapshots)
 
@@ -66,7 +97,7 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
 
 
 
-def compileSnapshot(project: Project, snapshot: Snapshot, actions: List[Action], reporter: Reporter) -> None:
+def compileSnapshot(project: Project, snapshot: Snapshot, actions: List[Action], reporter: Reporter) -> Snapshot:
     thread_id = threading.get_ident()
 
     workDir = initFolder(project, thread_id)
@@ -93,5 +124,12 @@ def compileSnapshot(project: Project, snapshot: Snapshot, actions: List[Action],
     
     if snapshot.status != SnapshotStatus.FAILED:
         snapshot.status = SnapshotStatus.COMPLETED
+    # else:
+    #     # retry if concat commits is enabled
+    #     if project.config['concatCommits'] and snapshot.concat_commit_retry_count < project.config['concatCommitsMax'] // 2:
+    #         snapshot.concat_commit_retry_count += 1
+    #         reporter.log(f'Retrying snapshot {snapshot.commit_sha} ({snapshot.concat_commit_retry_count}/{project.config["concatCommitsMax"] // 2})')
+    #         return compileSnapshot(project, snapshot, actions, reporter)
 
     reporter.add_progress(snapshot)
+    return snapshot
