@@ -26,9 +26,9 @@ export const SnapshotPages = (props: SnapshotPagesProps) => {
     const [ pageWidth, setPageWidth ] = useState([400]);
 
     const status = props.snapshot.status;
-    if (status && status['PDF to Image'] === 'Completed') {
+    if (status && status === 'Completed') {
 
-        const images = props.snapshot.pages.map((page, index) => {
+        const images = props.snapshot.pages.map((page: string, index) => {
             const pageChanged = !!props.snapshot.changed_pages.find(p => p.page === index + 1);
             const detailChanges = props.snapshot.changed_pages
                 .filter(p => p.page === index + 1)
@@ -41,12 +41,15 @@ export const SnapshotPages = (props: SnapshotPagesProps) => {
                     }}></div>
                 ));
 
+            // extract the page from the path
+            const pageName = page.split('/').pop();
+
             return (
                 <div className='snapshot-page-preview' key={page} style={{ 'width': `${pageWidth}px` }}>
                     {pageChanged && <div className='snapshot-page-changed' />}
                     {detailChanges}
 
-                    <img src={`/api/projects/${props.project.name}/snapshot/${props.snapshot.commit_sha}/image/${page}`}
+                    <img src={`/api/projects/${props.project.name}/snapshot/${props.snapshot.commit_sha}/image/${pageName}`}
                         className='max-w-full'
                         style={{ 'filter': `blur(${props.blur}px)` }}
                         alt={`Page ${index}`}

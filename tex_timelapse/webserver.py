@@ -168,14 +168,15 @@ class WebServer:
 
         @self.app.route('/api/projects/<name>/snapshot/<snapshot>/image/<image>')
         def getImage(name, snapshot, image):
-            return { 'success': False, 'error': 'NYI' }
-            # try:
-            #     project =  localProjects[name]
-            #     snapshot = next((s for s in project.snapshots if s.commit_sha == snapshot), None)
-            #     filePath = path.join(os.getcwd(), snapshot.getWorkDir(), 'images', image)
-            #     return send_file(filePath)
-            # except Exception as e:
-            #     return str(e)
+            try:
+                project = Project.deserialize(name)
+                # TODO: sanitize snapshot and image
+                filePath = path.join(os.getcwd(), project.projectFolder, 'thumbnails', snapshot, image)
+                print(filePath)
+                return send_file(filePath)
+            except Exception as e:
+                filePath = path.join(os.getcwd(), project.projectFolder, 'thumbnails', snapshot, image)
+                return str(e)
 
 
         UPLOAD_FOLDER = 'uploads'
