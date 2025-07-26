@@ -58,18 +58,17 @@ class WebServer:
         @self.app.route('/api/projects/<name>/run')
         def __runProject(name):
             try:
-                # jobs = [
-                #     InitRepoAction(),
-                #     CompileLatexAction(),
-                #     PdfToImageAction(),
-                #     AssembleImageAction()
-                # ]
+                project = Project.deserialize(name)
+                project.loadSnapshots()
 
-                # compileProject(project, 'test', jobs, WebReporter(self.socketio))
+                jobs = [
+                    InitRepoAction(),
+                    CompileLatexAction(),
+                    PdfToImageAction(),
+                    AssembleImageAction()
+                ]
 
-                # # update snapshot in project snapshots
-                # project.initSnapshots()
-                # webProjects[name]['snapshots'] = [snapshot.to_dict() for snapshot in project.snapshots]
+                compileProject(project, 'test', jobs, WebReporter(self.socketio))
 
                 return { 'success': True }
             except Exception as e:

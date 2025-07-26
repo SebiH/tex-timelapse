@@ -1,11 +1,10 @@
+import './TimelapseView.scss';
 import { TimelapseProject } from '@/models/project';
 import { useState } from 'react';
-import { SnapshotSlider } from '@/features/snapshots/snapshot-slider';
-
-import './TimelapseView.scss';
 import { Badge } from '@/components/ui/badge';
 import { SnapshotPages } from '@/features/snapshots/snapshot-pages';
 import { TimelapseSettings } from '@/features/timelapse/timelapse-settings';
+import { HistogramSlider } from '@/features/histogram/histogram-slider';
 
 export interface TimelapseViewProps {
     project: TimelapseProject
@@ -41,7 +40,7 @@ export const TimelapseView = (props: TimelapseViewProps) => {
         </div>
 
         <div className='relative hidden flex-col items-start gap-8 md:flex project-view-slider'>
-            <SnapshotSlider snapshots={snapshots} mode='range' startSnapshot={startSnapshot} endSnapshot={endSnapshot} />
+            <HistogramSlider snapshots={snapshots} mode='single' startSnapshot={startSnapshot} endSnapshot={endSnapshot} />
         </div>
 
     </main>;

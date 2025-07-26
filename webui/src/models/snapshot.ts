@@ -2,7 +2,7 @@ export type TimelapseSnapshot = {
     'commit_sha': string;
     'commit_date': number;
     'main_tex_file': string;
-    'status': { [key: string]: string };
+    'status': 'In Progress' | 'Completed' | 'Failed' | 'Unknown';
     'error': string;
     'includes': string[],
     'gitDiff': string,

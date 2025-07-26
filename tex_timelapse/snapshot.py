@@ -19,7 +19,7 @@ class Snapshot:
         self.index = index
         self.main_tex_file = '' # will be set by InitRepoAction
 
-        self.status: dict[str, str] = {}
+        self.status: str = ''
         self.error = ''
         self.includes: list[str] = []
         #pdf_file: str

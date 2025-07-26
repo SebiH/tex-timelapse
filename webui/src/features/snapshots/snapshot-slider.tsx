@@ -46,13 +46,13 @@ export const SnapshotSlider = ({ snapshots, mode, startSnapshot, endSnapshot }: 
 
     const commitDots = snapshots.map(s => {
         const getJobColor = (job: string) => {
-            if (s.status[job] === 'In Progress') {
-                return '#EBCB8B';
-            } else if (s.status[job] === 'Completed') {
-                return '#A3BE8C';
-            } else if (s.status[job] === 'Failed') {
-                return '#BF616A';
-            }
+            // if (s.status[job] === 'In Progress') {
+            //     return '#EBCB8B';
+            // } else if (s.status[job] === 'Completed') {
+            //     return '#A3BE8C';
+            // } else if (s.status[job] === 'Failed') {
+            //     return '#BF616A';
+            // }
             return '#D8DEE9';
         };
 

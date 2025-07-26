@@ -3,10 +3,10 @@ import { TimelapseProject } from '@/models/project';
 
 import './SnapshotView.scss';
 import { SnapshotPages } from '@/features/snapshots/snapshot-pages';
-import { SnapshotSlider } from '@/features/snapshots/snapshot-slider';
 import { SnapshotInfo } from '@/features/snapshots/snapshot-info';
 import { useEffect, useState } from 'react';
 import { UIState } from '@/models/ui-state';
+import { HistogramSlider } from '@/features/histogram/histogram-slider';
 
 export interface SnapshotViewProps {
     project: TimelapseProject
@@ -26,12 +26,13 @@ export const SnapshotView = (props: SnapshotViewProps) => {
 
     // TODO: update this once we have a proper status
     const isRendering = () => {
-        for (const key in snapshot?.status) {
-            if (snapshot.status[key] === 'In Progress')
-                return true;
-        }
+        return true;
+        // for (const key in snapshot?.status) {
+        //     if (snapshot.status[key] === 'In Progress')
+        //         return true;
+        // }
 
-        return false;
+        // return false;
     };
 
     return <main className='grid flex-1 gap-4 overflow-none p-4 snapshot-view-grid'>
@@ -57,7 +58,7 @@ export const SnapshotView = (props: SnapshotViewProps) => {
         </div>
 
         <div className='relative hidden flex-col items-start gap-8 md:flex snapshot-view-slider'>
-            <SnapshotSlider snapshots={snapshots} mode='single' startSnapshot={snapshot} />
+            <HistogramSlider snapshots={snapshots} mode='single' startSnapshot={snapshot} />
         </div>
 
     </main>;

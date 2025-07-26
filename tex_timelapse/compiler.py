@@ -16,26 +16,12 @@ def setThreads(threads: int) -> None:
     global executor
     executor = concurrent.futures.ThreadPoolExecutor(threads)
 
-def canRun(prevAction: str, action: Action, snapshot: Snapshot) -> bool:
-    if prevAction != '':
-        # prevAction did not run
-        if prevAction not in snapshot.status:
-            return False
-
-        # prevAction failed
-        if snapshot.status[prevAction] != SnapshotStatus.COMPLETED:
-            return False
-
-    return True
-
-
-
 def initFolder(project: Project, id: int) -> str:
-    # generate unique folder name via uuid
     workDir = f"{project.projectFolder}/workdir/{id}"
-    # check if workdir already exists
+
     if not os.path.exists(workDir):
         copytree(f'{project.projectFolder}/source/.git', f'{workDir}/.git', dirs_exist_ok=True)
+
     return workDir
 
 def cleanupFolder(project: Project, folder: str) -> None:
@@ -71,7 +57,7 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
         -pattern_type glob -i {project.projectFolder}/frames/*.png
         -c:v libx264 -movflags +faststart
         -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2:0:0:white
-        -strict -2 {project.projectFolder}/frames/{output}.mp4
+        -strict -2 {project.projectFolder}/output/{output}.mp4
     """
 
     ff = FfmpegProgress([ c.strip() for c in cmd.split(' ') if c != ''])
@@ -86,26 +72,26 @@ def compileSnapshot(project: Project, snapshot: Snapshot, actions: List[Action],
     workDir = initFolder(project, thread_id)
     snapshot.setWorkDir(workDir)
 
-    prevAction = ''
-    for action in actions:
-        if not canRun(prevAction, action, snapshot):
-            prevAction = action.getName()
-            continue
+    snapshot.status = SnapshotStatus.IN_PROGRESS
+    reporter.update_progress(snapshot)
 
+    for action in actions:
         action.init(project)
-        snapshot.status[action.getName()] = SnapshotStatus.IN_PROGRESS
-        reporter.update_progress(snapshot)
 
         try:
             result = action.run(snapshot)
-            snapshot.status[action.getName()] = result
         except Exception as e:
-            snapshot.status[action.getName()] = SnapshotStatus.FAILED
+            result = SnapshotStatus.FAILED
             snapshot.error = str(e)
             reporter.log(f'Action "{action.getName()}" for snapshot {snapshot.commit_sha} failed with error: {e}')
         
+        if result == SnapshotStatus.FAILED:
+            snapshot.status = SnapshotStatus.FAILED
+            break
+
         action.cleanup()
-        prevAction = action.getName()
-        reporter.update_progress(snapshot)
     
+    if snapshot.status != SnapshotStatus.FAILED:
+        snapshot.status = SnapshotStatus.COMPLETED
+
     reporter.add_progress(snapshot)

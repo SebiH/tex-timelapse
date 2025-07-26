@@ -1,5 +1,5 @@
 import { TimelapseProject } from './project';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { TimelapseSnapshot } from './snapshot';
 import { io } from 'socket.io-client';
 
@@ -43,22 +43,22 @@ export const UIState = {
     },
 
     updateSnapshot(project: TimelapseProject, snapshot: TimelapseSnapshot) {
-        snapshot.pages = snapshot.pages.sort();
-        const index = project.snapshots.findIndex(s => s.commit_sha === snapshot.commit_sha);
-        const nextProject: TimelapseProject = {
-            ...project,
-            snapshots: [
-                ...project.snapshots.slice(0, index),
-                snapshot as TimelapseSnapshot,
-                ...project.snapshots.slice(index + 1)
-            ]
-        };
-        this.project.next(nextProject);
+        // snapshot.pages = snapshot.pages.sort();
+        // const index = project.snapshots.findIndex(s => s.commit_sha === snapshot.commit_sha);
+        // const nextProject: TimelapseProject = {
+        //     ...project,
+        //     snapshots: [
+        //         ...project.snapshots.slice(0, index),
+        //         snapshot as TimelapseSnapshot,
+        //         ...project.snapshots.slice(index + 1)
+        //     ]
+        // };
+        // this.project.next(nextProject);
 
-        // update current snapshot if it's the same (since it might have changed)
-        if (this.currentSnapshot.value?.commit_sha === snapshot.commit_sha) {
-            this.currentSnapshot.next(snapshot as TimelapseSnapshot);
-        }
+        // // update current snapshot if it's the same (since it might have changed)
+        // if (this.currentSnapshot.value?.commit_sha === snapshot.commit_sha) {
+        //     this.currentSnapshot.next(snapshot as TimelapseSnapshot);
+        // }
     },
 
     async resetSnapshot(commit_sha: string, stage?: number) {
@@ -83,15 +83,19 @@ export const UIState = {
 };
 
 const socket = io();
+const snapshotUpdates = new Subject<TimelapseSnapshot>();
+export const snapshotUpdates$ = snapshotUpdates.asObservable();
+
 socket.on('stage', ({ stage, length }: { stage: string, length: number }) => {
     // TODO
     console.log('stage', stage, length);
 });
 
 socket.on('add_progress', ({ snapshot }: { snapshot: TimelapseSnapshot }) => {
-    const project = UIState.project.value;
-    if (project)
-        UIState.updateSnapshot(project, snapshot);
+    // const project = UIState.project.value;
+    // if (project)
+    //     UIState.updateSnapshot(project, snapshot);
+    snapshotUpdates.next(snapshot);
 });
 
 socket.on('set_progress', ({ set }: { set: number }) => {
