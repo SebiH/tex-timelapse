@@ -80,11 +80,13 @@ def runProject(name: str, output: str, args):
     project.loadSnapshots()
 
     from tex_timelapse.actions.init_repo import InitRepoAction
+    from tex_timelapse.actions.replace_text import ReplaceTextAction
     from tex_timelapse.actions.compile_latex import CompileLatexAction
     from tex_timelapse.actions.pdf_to_image import PdfToImageAction
     from tex_timelapse.actions.assemble_image import AssembleImageAction
     jobs = [
         InitRepoAction(),
+        ReplaceTextAction(),
         CompileLatexAction(),
         PdfToImageAction(),
         AssembleImageAction()
@@ -98,7 +100,7 @@ def runProject(name: str, output: str, args):
             foundStage = jobName == args.stage
             if foundStage:
                 for snapshot in project.snapshots:
-                    snapshot.status[jobName] = SnapshotStatus.PENDING
+                    snapshot.status = SnapshotStatus.PENDING
 
     compileProject(project, output, jobs, TerminalReporter())
 

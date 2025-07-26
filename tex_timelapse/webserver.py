@@ -10,6 +10,7 @@ from tex_timelapse.compiler import compileProject, compileSnapshot
 from tex_timelapse.project import Project
 
 from .actions.init_repo import InitRepoAction
+from .actions.replace_text import ReplaceTextAction
 from .actions.compile_latex import CompileLatexAction
 from .actions.pdf_to_image import PdfToImageAction
 from .actions.assemble_image import AssembleImageAction
@@ -63,6 +64,7 @@ class WebServer:
 
                 jobs = [
                     InitRepoAction(),
+                    ReplaceTextAction(),
                     CompileLatexAction(),
                     PdfToImageAction(),
                     AssembleImageAction()

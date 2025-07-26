@@ -75,6 +75,18 @@ class InitRepoAction(Action):
                     file += '.tex'
                 new_files.append(file.strip())
 
+            resultBibliography = snapshot.execute_cmd('grep -r \\\\addbibresource{ ' + unscanned_files[0], ignore_error=True)
+            for line in resultBibliography.splitlines():
+                # ingore commented files
+                if line.strip().startswith('%'):
+                    continue
+
+                # extract file name
+                file = line.split('{')[1].split('}')[0]
+                if not file.endswith('.bib'):
+                    file += '.bib'
+                new_files.append(file.strip())
+
             resultGraphics = snapshot.execute_cmd('grep -r \\\\includegraphics ' + unscanned_files[0], ignore_error=True)
             for line in resultGraphics.splitlines():
                 # ingore commented files

@@ -29,6 +29,12 @@ cropAltBottom: 0
 # TODO: add comments
 latexCmd: latexmk -pdf -interaction=nonstopmode -synctex=1 -f
 
+text_replacements:
+  - old: '³'
+    new: '3'
+  - old: '⁈'
+    new: '?!'
+
 # TODO: add comments
 overleafProjectId: ''
 overleafAuthToken: ''

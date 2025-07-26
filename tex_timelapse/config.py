@@ -1,4 +1,3 @@
-import datetime
 from typing import  TypedDict
 
 class Config(TypedDict, total=False):
@@ -30,6 +29,8 @@ class Config(TypedDict, total=False):
 
     # TODO: maybe change to latexMode: pdflatex | luaLaTeX | xelatex...?
     latexCmd: str
+
+    text_replacements: list[dict[str, str]]
 
     overleafProjectId: str
     overleafAuthToken: str
