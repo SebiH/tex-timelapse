@@ -30,6 +30,7 @@ class PdfToImageAction(Action):
 
         # move images
         img_save_dir = f'{self.project_img_dir}/{snapshot.commit_sha}'
+        rmtree(img_save_dir, ignore_errors=True)
         os.makedirs(img_save_dir, exist_ok=True)
         os.rename(snapshot_img_dir, img_save_dir)
 
@@ -44,6 +45,7 @@ class PdfToImageAction(Action):
 
         # move thumbnails
         thumbnail_save_dir = f'{self.project_thumbnail_dir}/{snapshot.commit_sha}'
+        rmtree(thumbnail_save_dir, ignore_errors=True)
         os.makedirs(thumbnail_save_dir, exist_ok=True)
         os.rename(thumbnail_dir, thumbnail_save_dir)
 

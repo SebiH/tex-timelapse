@@ -96,6 +96,18 @@ socket.on('add_progress', ({ snapshot }: { snapshot: TimelapseSnapshot }) => {
     // if (project)
     //     UIState.updateSnapshot(project, snapshot);
     snapshotUpdates.next(snapshot);
+
+    if (UIState.project.value?.snapshots) {
+        const index = UIState.project.value.snapshots.findIndex(s => s.commit_sha === snapshot.commit_sha);
+        if (index !== -1) {
+            UIState.project.value.snapshots[index] = snapshot;
+            UIState.project.next(UIState.project.value);
+        }
+    }
+
+    if (UIState.currentSnapshot.value?.commit_sha === snapshot.commit_sha) {
+        UIState.currentSnapshot.next(snapshot);
+    }
 });
 
 socket.on('set_progress', ({ set }: { set: number }) => {
