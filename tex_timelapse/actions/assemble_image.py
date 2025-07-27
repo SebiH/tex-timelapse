@@ -45,15 +45,24 @@ class AssembleImageAction(Action):
         workDir = snapshot.getWorkDir()
         rawImages = sorted(snapshot.pages)
 
+        # Retrieve image size from the first image
+        image_size = Image.open(rawImages[0]).size
+        image_width, image_height = image_size
+
+        # Check if the resulting image size is too large to downscale images as needed
+        scale = 1.0
+        if image_width * self.columns > 1920 or image_height * self.rows > 1080:
+            scale = min(1920.0 / (image_width * self.columns), 1080.0 / (image_height * self.rows))
+            image_size = (int(image_width * scale), int(image_height * scale))
+            image_width, image_height = image_size
+
         if self.blur > 0:
-            images = [Image.open(i).filter(ImageFilter.GaussianBlur(self.blur)) for i in rawImages]
+            images = [Image.open(i).resize(image_size, Image.Resampling.NEAREST).filter(ImageFilter.GaussianBlur(self.blur)) for i in rawImages]
         else:
-            images = [Image.open(i) for i in rawImages]
+            images = [Image.open(i).resize(image_size, Image.Resampling.NEAREST) for i in rawImages]
 
         if (len(images) == 0):
             raise Exception(f'No images found for {snapshot.commit_sha}')
-
-        image_size = images[0].size
 
         # Fill array with empty images if there are not enough pages
         while (len(images) < self.rows * self.columns):
@@ -75,7 +84,10 @@ class AssembleImageAction(Action):
         #         images[i] = images[i].crop((130, 130, 1080, 1380))
 
         if self.highlightChanges:
-            image_width, image_height = images[0].size
+
+            texFile = snapshot.main_tex_file
+            pdfFile = texFile[:-4] + '.pdf'
+            pdf_size = self.get_pdf_dimensions(f'{workDir}/{pdfFile}')
 
             # highlight entire pages first
             for synctexInfo in snapshot.changed_pages:
@@ -86,12 +98,10 @@ class AssembleImageAction(Action):
             # draw in more detailed changes
             for synctexInfo in snapshot.changed_pages:
                 page_num = int(synctexInfo['page'])
-                texFile = snapshot.main_tex_file
-                pdfFile = texFile[:-4] + '.pdf'
 
-                x, y, h, v, W, H = self.convert_synctex_to_image_coords(f'{workDir}/{pdfFile}', f'{snapshot.pages[page_num - 1]}', synctexInfo)
+                x, y, h, v, W, H = self.convert_synctex_to_image_coords(pdf_size, image_size, synctexInfo)
 
-                padding = 25
+                padding = image_width // 10
 
                 # for webui
                 synctexInfo['x1'] = float(h - padding) / float(image_width)
@@ -138,11 +148,11 @@ class AssembleImageAction(Action):
             img_width, img_height = img.size
         return img_width, img_height
 
-    def convert_synctex_to_image_coords(self, pdf_path: str, image_path: str, synctex_coords):
+    def convert_synctex_to_image_coords(self, pdf_size: Tuple[float, float], image_size: Tuple[float, float], synctex_coords):
         # Assume pdf_page_size is (width, height) in points (1/72 inch)
         # Assume image_size is (width, height) in pixels
-        pdf_width, pdf_height = self.get_pdf_dimensions(pdf_path)
-        image_width, image_height = self.get_image_dimensions(image_path)
+        pdf_width, pdf_height = pdf_size
+        image_width, image_height = image_size
 
         # Convert coordinates to image coordinates
         x_ratio = image_width / pdf_width
