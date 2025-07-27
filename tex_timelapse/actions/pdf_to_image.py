@@ -10,7 +10,6 @@ class PdfToImageAction(Action):
         return 'PDF to Image'
 
     def init(self, project: Project) -> None:
-        self.project_img_dir = f'{project.projectFolder}/images'
         self.project_thumbnail_dir = f'{project.projectFolder}/thumbnails'
         pass
 
@@ -28,12 +27,6 @@ class PdfToImageAction(Action):
         cmd = f'pdftoppm -jpeg {pdfFile} images/page'
         snapshot.execute_cmd(cmd)
 
-        # move images
-        img_save_dir = f'{self.project_img_dir}/{snapshot.commit_sha}'
-        rmtree(img_save_dir, ignore_errors=True)
-        os.makedirs(img_save_dir, exist_ok=True)
-        os.rename(snapshot_img_dir, img_save_dir)
-
 
         # generate thumbnails for web UI
         thumbnail_dir = f'{snapshot.getWorkDir()}/thumbnails'
@@ -50,11 +43,10 @@ class PdfToImageAction(Action):
         os.rename(thumbnail_dir, thumbnail_save_dir)
 
         # save pages for use in the webserver / later steps
-        snapshot.pages = [filename for filename in glob(f'{img_save_dir}/*.jpg')]
+        snapshot.pages = [filename for filename in glob(f'{snapshot_img_dir}/*.jpg')]
 
         return SnapshotStatus.COMPLETED
 
     def reset(self, snapshot: Snapshot) -> None:
         snapshot.pages = []
         rmtree(f'{self.project_thumbnail_dir}/{snapshot.commit_sha}', ignore_errors=True)
-        rmtree(f'{self.project_img_dir}/{snapshot.commit_sha}', ignore_errors=True)

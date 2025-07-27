@@ -29,14 +29,13 @@ class AssembleImageAction(Action):
         return 'Assemble Image'
 
     def init(self, project: Project) -> None:
-        os.makedirs(f'{project.projectFolder}/frames', exist_ok=True)
-
         self.blur = float(project.config['blur'])
         self.rows = int(project.config['rows'])
         self.columns = int(project.config['columns'])
         self.highlightChanges = bool(project.config['highlightChanges'])
         self.project_img_dir = f'{project.projectFolder}/frames'
-        pass
+
+        os.makedirs(self.project_img_dir, exist_ok=True)
 
     def cleanup(self) -> None:
         pass
