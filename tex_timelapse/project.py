@@ -30,21 +30,22 @@ class Project:
             self.snapshots = Snapshot.deserialize(f'{self.projectFolder}/snapshots.yaml')
             print(f"Loaded {len(self.snapshots)} existing snapshots for project {self.name}")
 
-        # Check if there are any missing snapshots
-        repo = git.Repo(os.path.join(self.projectFolder, 'source'))
-        missingCounter = 0
-        indexCounter = len(self.snapshots)
-        for commit in reversed(list(repo.iter_commits())):
-            if commit.hexsha not in [snapshot.commit_sha for snapshot in self.snapshots]:
-                missingCounter += 1
-                sDict = Snapshot(commit.hexsha, commit.authored_date, indexCounter)
-                indexCounter += 1
-                self.snapshots.append(sDict)
+        else:
+            # Check if there are any missing snapshots
+            repo = git.Repo(os.path.join(self.projectFolder, 'source'))
+            missingCounter = 0
+            indexCounter = len(self.snapshots)
+            for commit in reversed(list(repo.iter_commits())):
+                if commit.hexsha not in [snapshot.commit_sha for snapshot in self.snapshots]:
+                    missingCounter += 1
+                    sDict = Snapshot(commit.hexsha, commit.authored_date, indexCounter)
+                    indexCounter += 1
+                    self.snapshots.append(sDict)
         
-        print(f"Added {missingCounter} missing snapshots")
+            print(f"Added {missingCounter} missing snapshots")
 
-        if missingCounter > 0:
-            Snapshot.serialize(f'{self.projectFolder}/snapshots.yaml', self.snapshots)
+            if missingCounter > 0:
+                Snapshot.serialize(f'{self.projectFolder}/snapshots.yaml', self.snapshots)
 
         self.snapshots.sort(key=lambda x: x.index)
 

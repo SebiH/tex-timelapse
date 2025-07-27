@@ -16,7 +16,7 @@ class Snapshot:
     def __init__(self, commit_sha: str, commit_date: datetime, index: int):
         self.commit_sha = commit_sha
         self.commit_date = commit_date
-        self.index = index
+        self.index = int(index)
         self.main_tex_file = '' # will be set by InitRepoAction
 
         self.status: str = ''
@@ -66,16 +66,20 @@ class Snapshot:
     @staticmethod
     def deserialize(file_path: str) -> list['Snapshot']:
         with open(file_path, 'r') as file:
-            data = yaml.safe_load(file)
+            data = yaml.load(file, Loader=yaml.CBaseLoader)
         
         snapshots: list['Snapshot'] = []
         for snap in data if data is not None else []:
             snapshot = Snapshot(
                 commit_sha=snap["commit_sha"],
                 commit_date=snap["commit_date"],
-                index=snap["index"],
+                index=int(snap["index"]),
             )
             snapshot.__dict__.update(snap)
+
+            # for some reason, index is stored as a string in the yaml file
+            snapshot.index = int(snapshot.index)
+
             snapshots.append(snapshot)
 
         return snapshots
