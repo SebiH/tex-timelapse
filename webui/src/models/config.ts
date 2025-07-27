@@ -27,6 +27,10 @@ export type TimelapseConfig = {
     cropAltTop: number;
     cropAltBottom: number;
 
+    concatCommits: number;
+
+    text_replacements:  {'old': string, 'new': string}[];
+
     latexCmd: string;
 
     overleafProjectId: string;

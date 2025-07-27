@@ -1,7 +1,7 @@
 import './histogram-slider.scss';
 import { TimelapseSnapshot } from '../../models/snapshot';
 import { useEffect, useRef } from 'react';
-import { snapshotUpdates$ } from '@/models/ui-state';
+import { snapshotUpdates$, UIState } from '@/models/ui-state';
 
 type Props = {
     snapshots: TimelapseSnapshot[];
@@ -68,10 +68,20 @@ export const HistogramSlider = ({ snapshots, mode, startSnapshot, endSnapshot }:
         const snapshotUpdateHandler = snapshotUpdates$.subscribe((snapshot) => {
             const { width } = container.getBoundingClientRect();
             const margin = Math.max(0, Math.min(5, Math.floor(width / snapshots.length / 10)));
-            const barWidth = canvas.width / snapshots.length;
-            ctx.fillStyle = getSnapshotColor(snapshot);
-            const index = snapshots.findIndex(s => s.commit_sha === snapshot.commit_sha);
-            ctx.fillRect(index * barWidth, canvas.height - height, barWidth - margin, height);
+            
+            if (!UIState.project.value?.config?.concatCommits) {
+                const barWidth = canvas.width / snapshots.length;
+                ctx.fillStyle = getSnapshotColor(snapshot);
+                const index = snapshots.findIndex(s => s.commit_sha === snapshot.commit_sha);
+                ctx.fillRect(index * barWidth, canvas.height - height, barWidth - margin, height);
+            } else {
+                ctx.fillStyle = getSnapshotColor(snapshot);
+                const index = snapshots.findIndex(s => s.commit_sha === snapshot.commit_sha);
+                // find previous snapshot that was compiled
+                const previousIndex = index - UIState.project.value.config.concatCommits;
+                const barWidth = canvas.width / snapshots.length;
+                ctx.fillRect(previousIndex * barWidth, canvas.height - height, (index * barWidth) - (previousIndex * barWidth) - margin, height);
+            }
         });
 
         return () => {
