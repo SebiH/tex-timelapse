@@ -27,6 +27,7 @@ class Snapshot:
         self.pages: list[str] = []
         self.gitDiff: dict = {} # file -> changedLines
         self.changed_pages: list[dict] = []
+        self.jobs: dict = {}
 
     def setWorkDir(self, work_dir: str) -> None:
         self.work_dir = work_dir
@@ -55,6 +56,7 @@ class Snapshot:
             'includes': list(self.includes),
             'gitDiff': self.gitDiff,
             'pages': self.pages,
+            'jobs': self.jobs,
             'changed_pages': list(self.changed_pages)
         }
 

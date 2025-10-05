@@ -1,22 +1,11 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { BugPlay, Trash } from 'lucide-react';
+import { BugPlay } from 'lucide-react';
 import { toast } from 'sonner';
 import { TimelapseSnapshot } from '@/models/snapshot';
 import { TimelapseProject } from '@/models/project';
 import { UIState } from '@/models/ui-state';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 
@@ -36,29 +25,6 @@ const jobs = [
 ];
 
 export const SnapshotInfo = (props: SnapshotInfoProps) => {
-    const resetSnapshot = async () => {
-        const commitSha = props.snapshot.commit_sha;
-        const success = await UIState.resetSnapshot(commitSha);
-
-        if (success) {
-            toast.success('Reset successful', {
-                description: 'Snapshot reset successfully',
-                action: {
-                    label: 'View',
-                    onClick: () => UIState.setCurrentSnapshot(commitSha),
-                }
-            });
-        } else {
-            toast.error('Error', {
-                description: 'Snapshot could not be reset',
-                action: {
-                    label: 'View',
-                    onClick: () => UIState.setCurrentSnapshot(commitSha),
-                }
-            });
-        }
-    };
-
     const compileSnapshot = async () => {
         const commitSha = props.snapshot.commit_sha;
         const success = await UIState.compileSnapshot(commitSha);
@@ -83,7 +49,7 @@ export const SnapshotInfo = (props: SnapshotInfoProps) => {
     };
 
     const getStatusIndicatorClass = (job: string) => {
-        const status = props.snapshot.status[job];
+        const status = props.snapshot.jobs[job];
         let className = 'job-status-indicator ';
         if (status === 'Completed') {
             className += 'success';
@@ -163,29 +129,6 @@ export const SnapshotInfo = (props: SnapshotInfoProps) => {
         </form>
 
         <div className='flex flex-col gap-2 p-4'>
-
-            <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant='destructive' className='w-full'>
-                        <Trash className='w-4 h-4 m-1' />
-                        Reset Snapshot
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone and will reset the snapshot to its initial state.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={resetSnapshot.bind(this)}>Continue</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-
             <Button variant='default' className='w-full' onClick={compileSnapshot.bind(this)}>
                 <BugPlay className='w-4 h-4 m-1' />
                 Render Snapshot

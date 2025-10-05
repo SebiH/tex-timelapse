@@ -7,5 +7,6 @@ export type TimelapseSnapshot = {
     'includes': string[],
     'gitDiff': string,
     'changed_pages': { page: number, x1: number, y1: number, x2: number, y2: number }[],
-    'pages': []
+    'pages': [],
+    'jobs': { [key: string]: 'In Progress' | 'Completed' | 'Failed' | 'Unknown' };
 }

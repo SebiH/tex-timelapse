@@ -9,6 +9,7 @@ from flask_cors import CORS
 from tex_timelapse.reporters.web_reporter import WebReporter
 from tex_timelapse.compiler import compileProject, compileSnapshot
 from tex_timelapse.project import Project
+from tex_timelapse.snapshot import Snapshot
 
 from .actions.init_repo import InitRepoAction
 from .actions.replace_text import ReplaceTextAction
@@ -95,45 +96,30 @@ class WebServer:
 
         @self.app.route('/api/projects/<name>/snapshot/<snapshot_sha>/run')
         def __compileSnapshot(name, snapshot_sha):
-            return { 'success': False, 'error': 'NYI' }
-            # project = localProjects[name]
-            # try:
-            #     jobs = [
-            #         InitRepoAction(),
-            #         CompileLatexAction(),
-            #         PdfToImageAction(),
-            #         AssembleImageAction()
-            #     ]
+            try:
+                project = Project.deserialize(name)
+                project.loadSnapshots()
+                matching_snapshot = [s for s in project.snapshots if s.commit_sha == snapshot_sha]
 
-            #     snapshot = compileSnapshot(project, snapshot_sha, jobs, WebReporter(self.socketio))
-            #     matching_snapshot = [s for s in project.snapshots if s.commit_sha == snapshot_sha]
-
-            #     if len(matching_snapshot) == 0:
-            #         raise Exception(f"Snapshot {snapshot_sha} not found")
-            #     if len(matching_snapshot) > 1:
-            #         raise Exception(f"Snapshot {snapshot_sha} found multiple times")
-
-            #     # update snapshot in project snapshots
-            #     project.initSnapshots()
-            #     webProjects[name]['snapshots'] = [snapshot.to_dict() for snapshot in project.snapshots]
-
-            #     return { 'success': True, 'snapshot': snapshot.to_dict() }
-            # except Exception as e:
-            #     return { 'success': False, 'error': str(e) }
+                jobs = [
+                    InitRepoAction(),
+                    ReplaceTextAction(),
+                    CompileLatexAction(),
+                    PdfToImageAction(),
+                    AssembleImageAction()
+                ]
 
 
+                if len(matching_snapshot) == 0:
+                    return { 'success': False, 'error': 'Snapshot not found' }
 
-        @self.app.route('/api/projects/<name>/snapshot/<snapshot>/pdf')
-        def getPdf(name, snapshot):
-            return { 'success': False, 'error': 'NYI' }
-            # try:
-            #     project =  localProjects[name]
-            #     snapshot = next((s for s in project.snapshots if s.commit_sha == snapshot), None)
-            #     pdfFile = snapshot.main_tex_file[:-4] + ".pdf"
-            #     filePath = path.join(os.getcwd(), snapshot.getWorkDir(), 'latex', pdfFile)
-            #     return send_file(filePath)
-            # except Exception as e:
-            #     return str(e)
+                compileSnapshot(project, matching_snapshot[0], jobs, WebReporter(self.socketio))
+                Snapshot.serialize(f'{project.projectFolder}/snapshots.yaml', project.snapshots)
+
+                return { 'success': True }
+            except Exception as e:
+                return { 'success': False, 'error': str(e) }
+
 
         @self.app.route('/api/projects/<name>/snapshot/<snapshot>/image/<image>')
         def getImage(name, snapshot, image):

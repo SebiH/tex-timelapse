@@ -26,13 +26,7 @@ export const SnapshotView = (props: SnapshotViewProps) => {
 
     // TODO: update this once we have a proper status
     const isRendering = () => {
-        return true;
-        // for (const key in snapshot?.status) {
-        //     if (snapshot.status[key] === 'In Progress')
-        //         return true;
-        // }
-
-        // return false;
+        return UIState.currentSnapshot.value?.status === 'In Progress';
     };
 
     return <main className='grid flex-1 gap-4 overflow-none p-4 snapshot-view-grid'>

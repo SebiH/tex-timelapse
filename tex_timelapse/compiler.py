@@ -109,9 +109,12 @@ def compileSnapshot(project: Project, snapshot: Snapshot, actions: List[Action],
 
     for action in actions:
         action.init(project)
+        snapshot.jobs[action.getName()] = SnapshotStatus.IN_PROGRESS
+        reporter.update_progress(snapshot)
 
         try:
             result = action.run(snapshot)
+            snapshot.jobs[action.getName()] = SnapshotStatus.COMPLETED
         except Exception as e:
             result = SnapshotStatus.FAILED
             snapshot.error = str(e)
@@ -119,7 +122,10 @@ def compileSnapshot(project: Project, snapshot: Snapshot, actions: List[Action],
         
         if result == SnapshotStatus.FAILED:
             snapshot.status = SnapshotStatus.FAILED
+            snapshot.jobs[action.getName()] = SnapshotStatus.FAILED
             break
+
+        reporter.update_progress(snapshot)
 
         action.cleanup()
     
