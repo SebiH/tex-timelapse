@@ -5,12 +5,9 @@ import { snapshotUpdates$, UIState } from '@/models/ui-state';
 
 type Props = {
     snapshots: TimelapseSnapshot[];
-    startSnapshot: TimelapseSnapshot;
-    endSnapshot?: TimelapseSnapshot;
-    mode: 'single' | 'range';
 };
 
-export const Histogram = ({ snapshots, mode, startSnapshot, endSnapshot }: Props) => {
+export const Histogram = ({ snapshots }: Props) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 

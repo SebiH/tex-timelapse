@@ -6,7 +6,7 @@ import { SnapshotPages } from '@/features/snapshots/snapshot-pages';
 import { SnapshotInfo } from '@/features/snapshots/snapshot-info';
 import { useEffect, useState } from 'react';
 import { UIState } from '@/models/ui-state';
-import { Histogram } from '@/features/histogram/histogram';
+import { HistogramSlider } from '@/features/histogram/histogram-slider';
 
 export interface SnapshotViewProps {
     project: TimelapseProject
@@ -52,7 +52,7 @@ export const SnapshotView = (props: SnapshotViewProps) => {
         </div>
 
         <div className='relative hidden flex-col items-start gap-8 md:flex snapshot-view-slider'>
-            <Histogram snapshots={snapshots} mode='single' startSnapshot={snapshot} />
+            <HistogramSlider snapshots={snapshots} mode='single' startSnapshot={snapshot} />
         </div>
 
     </main>;
