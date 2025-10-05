@@ -8,7 +8,7 @@ class InitRepoAction(Action):
         return "Init Repository"
 
     def init(self, project: Project) -> None:
-        self.concatCommits = project.config['concatCommits']
+        self.concatCommits = project.config.get('concatCommits', -1)
 
     def cleanup(self) -> None:
         pass
@@ -21,7 +21,7 @@ class InitRepoAction(Action):
         snapshot.main_tex_file = self.findMainTexFile(snapshot)
         snapshot.includes = self.findIncludedFiles(snapshot)
 
-        diffHistory = 1 if self.concatCommits == 0 else self.concatCommits
+        diffHistory = 1 if self.concatCommits <= 0 else self.concatCommits
 
         # check for any changes to highlight them in the final output
         for file in snapshot.includes:

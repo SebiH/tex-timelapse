@@ -29,19 +29,20 @@ def cleanupFolder(project: Project, folder: str) -> None:
 
 def compileProject(project: Project, output: str, actions: List[Action], reporter: Reporter) -> None:
     snapshot_count = len(project.snapshots)
-    if project.config['concatCommits'] > 0:
-        snapshot_count = snapshot_count // project.config['concatCommits']
+    concat_commits = project.config.get('concatCommits', -1)
+    if concat_commits > 0:
+        snapshot_count = snapshot_count // concat_commits
 
     reporter.set_stage("Compiling snapshots", snapshot_count)
 
     # skip commits if concat commits is enabled, but start with the first commit
-    skip_count = project.config['concatCommits']
+    skip_count = concat_commits
 
     try:
         pending_snapshots = []
         for snapshot in project.snapshots:
             # skip # of commits if concat commits is enabled
-            if project.config['concatCommits'] > 0 and skip_count < project.config['concatCommits']:
+            if concat_commits > 0 and skip_count < concat_commits:
                 skip_count += 1
                 continue
             pending_snapshots.append(snapshot)
@@ -49,7 +50,7 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
 
         retry_count = 0
 
-        while len(pending_snapshots) > 0 and retry_count < project.config['concatCommits'] // 2:
+        while len(pending_snapshots) > 0 and (retry_count < concat_commits // 2 or concat_commits == -1):
             futures = []
             for snapshot in pending_snapshots:
                 future = executor.submit(compileSnapshot, project, snapshot, actions, reporter)
@@ -63,13 +64,13 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
                 completed_snapshot = future.result()
                 
                 # retry compilation if we skipped commits from concatention anyway
-                if project.config['concatCommits'] > 0 and completed_snapshot.status == SnapshotStatus.FAILED:
+                if concat_commits > 0 and completed_snapshot.status == SnapshotStatus.FAILED:
                     # progressively try previous snapshots if available - maybe we can find a working one
                     snapshot_index = next((i for i, snapshot in enumerate(project.snapshots) if snapshot.commit_sha == completed_snapshot.commit_sha), -1)
                     if snapshot_index > 0:
                         previous_snapshot = project.snapshots[snapshot_index - 1]
                         pending_snapshots.append(previous_snapshot)
-                        reporter.log(f'Retrying snapshot {completed_snapshot.commit_sha} ({retry_count}/{project.config["concatCommits"] // 2})')
+                        reporter.log(f'Retrying snapshot {completed_snapshot.commit_sha} ({retry_count}/{concat_commits // 2})')
 
         Snapshot.serialize(f'{project.projectFolder}/snapshots.yaml', project.snapshots)
 

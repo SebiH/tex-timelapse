@@ -110,31 +110,18 @@ export const TimelapseSettings = ({ project }: TimelapseSettingsProps) => {
         }
     };
 
-    const resetProject = async () => {
-        const response = await fetch(`/api/projects/${project.name}/reset`);
-
-        if (response.ok) {
-            const data = await response.json();
-
-            if (data.success) {
-                UIState.setProject({ ...project, snapshots: data.snapshots });
-
-                toast.success('Project reset', {
-                    description: 'Project was reset successfully',
-                });
-            } else {
-                toast.error('Error', {
-                    description: 'Project could not be reset: ' + data.error,
-                });
-            }
-        } else {
+    const resetProjectSnapshots = async () => {
+        try {
+            await UIState.resetProjectSnapshots(project);
+            toast.success('Project reset', {
+                description: 'Project was reset successfully',
+            });
+        } catch (e) {
             toast.error('Error', {
-                description: 'Project could not be reset: Server error',
+                description: 'Project could not be reset',
             });
         }
-
     };
-
 
 
     return <div className='flex flex-col justify-between w-full h-full'>
@@ -362,7 +349,7 @@ export const TimelapseSettings = ({ project }: TimelapseSettingsProps) => {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={resetProject.bind(this)}>Continue</AlertDialogAction>
+                        <AlertDialogAction onClick={resetProjectSnapshots.bind(this)}>Continue</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

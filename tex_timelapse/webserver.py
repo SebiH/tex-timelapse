@@ -1,5 +1,6 @@
 from os import path
 import os
+from shutil import rmtree
 from flask import Flask, jsonify, send_file
 from flask import request
 from flask_socketio import SocketIO # type: ignore
@@ -78,15 +79,19 @@ class WebServer:
 
         @self.app.route('/api/projects/<name>/reset')
         def __resetProject(name):
-            # project = localProjects[name]
-            # try:
-            #     rmtree(f'{project.projectFolder}/snapshots', ignore_errors=True)
-            #     project.initSnapshots()
-            #     webProjects[name]['snapshots'] = [snapshot.to_dict() for snapshot in project.snapshots]
-            #     return { 'success': True, 'snapshots': webProjects[name]['snapshots'] }
-            # except Exception as e:
-                # return { 'success': False, 'error': str(e) }
-            return { 'success': False, 'error': 'NYI' }
+            try:
+                project = Project.deserialize(name)
+
+                # todo: handle this in a more central location
+                rmtree(f'{project.projectFolder}/images', ignore_errors=True)
+                rmtree(f'{project.projectFolder}/thumbnails', ignore_errors=True)
+                if os.path.exists(f'{project.projectFolder}/snapshots.yaml'):
+                    os.remove(f'{project.projectFolder}/snapshots.yaml')
+
+                return { 'success': True }
+            except Exception as e:
+                return { 'success': False, 'error': str(e) }
+
 
         @self.app.route('/api/projects/<name>/snapshot/<snapshot_sha>/run')
         def __compileSnapshot(name, snapshot_sha):
@@ -111,42 +116,6 @@ class WebServer:
             #     # update snapshot in project snapshots
             #     project.initSnapshots()
             #     webProjects[name]['snapshots'] = [snapshot.to_dict() for snapshot in project.snapshots]
-
-            #     return { 'success': True, 'snapshot': snapshot.to_dict() }
-            # except Exception as e:
-            #     return { 'success': False, 'error': str(e) }
-
-
-        @self.app.route('/api/projects/<name>/snapshot/<snapshot_sha>/reset/<stage>')
-        def __resetSnapshot (name, snapshot_sha, stage):
-            return { 'success': False, 'error': 'NYI' }
-            # project = localProjects[name]
-            # try:
-            #     jobs = [
-            #         InitRepoAction(),
-            #         CompileLatexAction(),
-            #         PdfToImageAction(),
-            #         AssembleImageAction()
-            #     ]
-
-            #     if stage is not None and stage.isdigit():
-            #         jobs = jobs[:int(stage)]
-
-            #     snapshot = next((s for s in project.snapshots if s.commit_sha == snapshot_sha), None)
-            #     if snapshot is None:
-            #         raise Exception(f"Snapshot {snapshot_sha} not found")
-
-            #     # reset all jobs, starting from the last one in case earlier jobs depend on later ones
-            #     snapshot.error = ''
-            #     for job in reversed(jobs):
-            #         job.reset(snapshot)
-            #         snapshot.status[job.getName()] = None
-            #         saveToFile(f'{snapshot.getWorkDir()}/snapshot.yaml', snapshot)
-                
-            #     # reload snapshots from file
-            #     project.initSnapshots()
-            #     webProjects[name]['snapshots'] = [snapshot.to_dict() for snapshot in project.snapshots]
-            #     snapshot = next((s for s in project.snapshots if s.commit_sha == snapshot_sha), None)
 
             #     return { 'success': True, 'snapshot': snapshot.to_dict() }
             # except Exception as e:

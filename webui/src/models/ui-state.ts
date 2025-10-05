@@ -42,6 +42,34 @@ export const UIState = {
         }
     },
 
+    async resetProjectSnapshots(project: TimelapseProject) {
+        return fetch(`/api/projects/${project.name}/reset`).then(async (response) => {
+            if (response.ok) {
+                const data = await response.json();
+
+                if (data.success) {
+                    const snapshots: TimelapseSnapshot[] = UIState.project.value?.snapshots.map((s: TimelapseSnapshot) => {
+                        return { ...s, status: 'Unknown', pages: [] };
+                    }) || [];
+
+                    if (UIState.project.value) {
+                        UIState.project.value.snapshots = snapshots;
+                    }
+
+                    UIState.setProject({ ...project, snapshots });
+                    
+                    for (const snapshot of snapshots) {
+                        snapshotUpdates.next(snapshot);
+                    }
+                } else {
+                    throw new Error(data.error);
+                }
+            } else {
+                throw new Error('Server error');
+            }
+        });
+    },
+
     updateSnapshot(project: TimelapseProject, snapshot: TimelapseSnapshot) {
         // snapshot.pages = snapshot.pages.sort();
         // const index = project.snapshots.findIndex(s => s.commit_sha === snapshot.commit_sha);
