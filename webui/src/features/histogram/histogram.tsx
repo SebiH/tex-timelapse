@@ -1,4 +1,4 @@
-import './histogram-slider.scss';
+import './histogram.scss';
 import { TimelapseSnapshot } from '../../models/snapshot';
 import { useEffect, useRef } from 'react';
 import { snapshotUpdates$, UIState } from '@/models/ui-state';
@@ -10,7 +10,7 @@ type Props = {
     mode: 'single' | 'range';
 };
 
-export const HistogramSlider = ({ snapshots, mode, startSnapshot, endSnapshot }: Props) => {
+export const Histogram = ({ snapshots, mode, startSnapshot, endSnapshot }: Props) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -91,8 +91,8 @@ export const HistogramSlider = ({ snapshots, mode, startSnapshot, endSnapshot }:
     }, [snapshots]);
 
     return (
-        <div ref={containerRef} className="histogram-slider-container">
-            <canvas className="histogram-slider" ref={canvasRef} />
+        <div ref={containerRef} className="histogram-container">
+            <canvas className="histogram" ref={canvasRef} />
         </div>
     );
 };

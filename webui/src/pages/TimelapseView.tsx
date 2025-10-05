@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { SnapshotPages } from '@/features/snapshots/snapshot-pages';
 import { TimelapseSettings } from '@/features/timelapse/timelapse-settings';
-import { HistogramSlider } from '@/features/histogram/histogram-slider';
+import { Histogram } from '@/features/histogram/histogram';
 
 export interface TimelapseViewProps {
     project: TimelapseProject
@@ -40,7 +40,7 @@ export const TimelapseView = (props: TimelapseViewProps) => {
         </div>
 
         <div className='relative hidden flex-col items-start gap-8 md:flex project-view-slider'>
-            <HistogramSlider snapshots={snapshots} mode='single' startSnapshot={startSnapshot} endSnapshot={endSnapshot} />
+            <Histogram snapshots={snapshots} mode='single' startSnapshot={startSnapshot} endSnapshot={endSnapshot} />
         </div>
 
     </main>;
