@@ -2,6 +2,7 @@ from tex_timelapse.actions.action import Action
 from tex_timelapse.project import Project
 from tex_timelapse.snapshot import Snapshot, SnapshotStatus
 
+import os
 import re
 
 class ReplaceTextAction(Action):
@@ -18,7 +19,7 @@ class ReplaceTextAction(Action):
         work_dir = snapshot.getWorkDir()
 
         for file in snapshot.includes:
-            if file.endswith('.tex') or file.endswith('.bib'):
+            if os.path.exists(file) and (file.endswith('.tex') or file.endswith('.bib')):
                 # replace text in the file
                 file_path = f"{work_dir}/{file}"
                 with open(file_path, 'r', encoding='utf-8') as f:
@@ -37,6 +38,9 @@ class ReplaceTextAction(Action):
             # remove \includeonly statements over multiple lines
             regex = r"^\s*%?\s*\\includeonly{.*?}"
             content = re.sub(regex, "", content, 0, re.MULTILINE | re.IGNORECASE | re.DOTALL)
+            # write content back
+        with open(main_tex_path, 'w', encoding='utf-8') as f:
+            f.write(content)
 
         return SnapshotStatus.COMPLETED
 
