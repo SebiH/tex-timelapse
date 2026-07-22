@@ -2,6 +2,7 @@ import './histogram.scss';
 import { TimelapseSnapshot } from '../../models/snapshot';
 import { useEffect, useRef } from 'react';
 import { snapshotUpdates$, UIState } from '@/models/ui-state';
+import { getBarMargin, getBarWidth, getSnapshotColor, HISTOGRAM_HEIGHT } from './histogram-utils';
 
 type Props = {
     snapshots: TimelapseSnapshot[];
@@ -27,33 +28,21 @@ export const Histogram = ({ snapshots }: Props) => {
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        const getSnapshotColor = (s: TimelapseSnapshot) => {
-            if (s.status === 'In Progress') {
-                return '#EBCB8B';
-            } else if (s.status === 'Completed') {
-                return '#A3BE8C';
-            } else if (s.status === 'Failed') {
-                return '#BF616A';
-            }
-            return '#D8DEE9';
-        };
-
-        const height = 20;
         const resizeCanvas = () => {
             const { width } = container.getBoundingClientRect();
 
             // Set canvas pixel dimensions (important!)
             canvas.width = width;
-            canvas.height = height;
+            canvas.height = HISTOGRAM_HEIGHT;
 
             // Clear and redraw
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const margin = Math.max(0, Math.min(5, Math.floor(width / snapshots.length / 10)));
-            const barWidth = canvas.width / snapshots.length;
+            const margin = getBarMargin(width, snapshots.length);
+            const barWidth = getBarWidth(canvas.width, snapshots.length);
             snapshots.forEach((snapshot, index) => {
                 ctx.fillStyle = getSnapshotColor(snapshot);
-                ctx.fillRect(index * barWidth, canvas.height - height, barWidth - margin, height);
+                ctx.fillRect(index * barWidth, canvas.height - HISTOGRAM_HEIGHT, barWidth - margin, HISTOGRAM_HEIGHT);
             });
         };
 
@@ -64,20 +53,19 @@ export const Histogram = ({ snapshots }: Props) => {
 
         const snapshotUpdateHandler = snapshotUpdates$.subscribe((snapshot) => {
             const { width } = container.getBoundingClientRect();
-            const margin = Math.max(0, Math.min(5, Math.floor(width / snapshots.length / 10)));
-            
-            if (!UIState.project.value?.config?.concatCommits) {
-                const barWidth = canvas.width / snapshots.length;
-                ctx.fillStyle = getSnapshotColor(snapshot);
-                const index = snapshots.findIndex(s => s.commit_sha === snapshot.commit_sha);
-                ctx.fillRect(index * barWidth, canvas.height - height, barWidth - margin, height);
+            const margin = getBarMargin(width, snapshots.length);
+            const barWidth = getBarWidth(canvas.width, snapshots.length);
+            const index = snapshots.findIndex(s => s.commit_sha === snapshot.commit_sha);
+
+            ctx.fillStyle = getSnapshotColor(snapshot);
+
+            const concatCommits = UIState.project.value?.config?.concatCommits;
+            if (!concatCommits) {
+                ctx.fillRect(index * barWidth, canvas.height - HISTOGRAM_HEIGHT, barWidth - margin, HISTOGRAM_HEIGHT);
             } else {
-                ctx.fillStyle = getSnapshotColor(snapshot);
-                const index = snapshots.findIndex(s => s.commit_sha === snapshot.commit_sha);
                 // find previous snapshot that was compiled
-                const previousIndex = index - UIState.project.value.config.concatCommits;
-                const barWidth = canvas.width / snapshots.length;
-                ctx.fillRect(previousIndex * barWidth, canvas.height - height, (index * barWidth) - (previousIndex * barWidth) - margin, height);
+                const previousIndex = index - concatCommits;
+                ctx.fillRect(previousIndex * barWidth, canvas.height - HISTOGRAM_HEIGHT, (index * barWidth) - (previousIndex * barWidth) - margin, HISTOGRAM_HEIGHT);
             }
         });
 
