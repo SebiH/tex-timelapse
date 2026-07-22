@@ -13,11 +13,7 @@ from tex_timelapse.compiler import compileProject, compileSnapshot
 from tex_timelapse.project import Project
 from tex_timelapse.snapshot import Snapshot, SnapshotStatus
 
-from .actions.init_repo import InitRepoAction
-from .actions.replace_text import ReplaceTextAction
-from .actions.compile_latex import CompileLatexAction
-from .actions.pdf_to_image import PdfToImageAction
-from .actions.assemble_image import AssembleImageAction
+from .actions import create_actions, get_stage_names
 
 class WebServer:
     def __init__(self):
@@ -66,13 +62,7 @@ class WebServer:
                 project = Project.deserialize(name)
                 project.loadSnapshots()
 
-                jobs = [
-                    InitRepoAction(),
-                    ReplaceTextAction(),
-                    CompileLatexAction(),
-                    PdfToImageAction(),
-                    AssembleImageAction()
-                ]
+                jobs = create_actions()
 
                 compileProject(project, 'test', jobs, WebReporter(self.socketio))
 
@@ -103,14 +93,7 @@ class WebServer:
                 project.loadSnapshots()
                 matching_snapshot = [s for s in project.snapshots if s.commit_sha == snapshot_sha]
 
-                jobs = [
-                    InitRepoAction(),
-                    ReplaceTextAction(),
-                    CompileLatexAction(),
-                    PdfToImageAction(),
-                    AssembleImageAction()
-                ]
-
+                jobs = create_actions()
 
                 if len(matching_snapshot) == 0:
                     return { 'success': False, 'error': 'Snapshot not found' }
@@ -136,15 +119,9 @@ class WebServer:
 
                 snapshot = matching_snapshot[0]
 
-                jobs = [
-                    InitRepoAction(),
-                    ReplaceTextAction(),
-                    CompileLatexAction(),
-                    PdfToImageAction(),
-                    AssembleImageAction()
-                ]
+                jobs = create_actions()
 
-                job_names = [job.getName() for job in jobs]
+                job_names = get_stage_names()
                 # an unknown/missing stage (e.g. the client passed `undefined`)
                 # resets every stage, starting from the first
                 start_index = job_names.index(stage) if stage in job_names else 0

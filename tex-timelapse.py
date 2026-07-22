@@ -8,6 +8,7 @@ from tex_timelapse.compiler import compileProject
 from tex_timelapse.project import Project
 from tex_timelapse.snapshot import SnapshotStatus
 from tex_timelapse.webserver import WebServer
+from tex_timelapse.actions import create_actions, get_stage_names
 
 
 ############################
@@ -95,21 +96,10 @@ def runProject(name: str, output: str, args):
     project = Project.deserialize(name)
     project.loadSnapshots()
 
-    from tex_timelapse.actions.init_repo import InitRepoAction
-    from tex_timelapse.actions.replace_text import ReplaceTextAction
-    from tex_timelapse.actions.compile_latex import CompileLatexAction
-    from tex_timelapse.actions.pdf_to_image import PdfToImageAction
-    from tex_timelapse.actions.assemble_image import AssembleImageAction
-    jobs = [
-        InitRepoAction(),
-        ReplaceTextAction(),
-        CompileLatexAction(),
-        PdfToImageAction(),
-        AssembleImageAction()
-    ]
+    jobs = create_actions()
 
     if args.stage is not None:
-        job_names = [job.getName() for job in jobs]
+        job_names = get_stage_names()
         matched_index = next((i for i, jobName in enumerate(job_names) if jobName.lower() == args.stage.lower()), None)
 
         if matched_index is None:
