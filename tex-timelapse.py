@@ -71,6 +71,19 @@ listParser = subparsers.add_parser('list', help='List all projects')
 # --------------
 serverParser = subparsers.add_parser('server', help='Server')
 
+serverParser.add_argument(
+    '--host',
+    type=str,
+    default='127.0.0.1',
+    help='Interface to bind to. Defaults to loopback only; use 0.0.0.0 to '
+         'accept connections from other machines (required in a container).')
+
+serverParser.add_argument(
+    '--port',
+    type=int,
+    default=5000,
+    help='Port to listen on (default: 5000)')
+
 
 ############################
 # Actions
@@ -136,7 +149,7 @@ elif (args.action == 'run'):
 elif (args.action == 'list'):
     listProjects()
 elif (args.action == 'server'):
-    WebServer().run()
+    WebServer().run(host=args.host, port=args.port)
     
 else:
     print(f"Unknown action '{args.action}'")

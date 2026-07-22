@@ -6,16 +6,51 @@ Visualizes the (git) history of a LaTeX project as a timelapse video. Requires t
 
 
 ## Usage
-### docker-compose
-*Note: Edit the docker-compose.yml first to change source path*
+### Docker
+Docker is the recommended way to run tex-timelapse: it bundles a TeX Live
+install, ffmpeg, and everything else the pipeline shells out to, so you
+don't need any of that installed locally.
+
+#### docker compose
+`docker-compose.yml` defines two services: `tex-timelapse` (the CLI/Flask
+server) and `webui` (the built React UI, served via nginx, which proxies
+`/api` and `/socket.io` through to `tex-timelapse` - see
+`docker/nginx.conf`). `./projects` and `./uploads` are bind-mounted so
+project data and video output land on the host, not just inside the
+container.
+
+Run the web server (+ UI) in the background:
 ```bash
-docker-compose run --rm tex-timelapse source/YOUR_MAIN_TEX_FILE.tex <arguments>
+docker compose up -d
+# server API on http://localhost:5000, web UI on http://localhost:8080
 ```
 
-### docker
-*Note: On windows, you may want to copy the files to a 'native' WSL and due to performance bottlenecks when reading/writing files from outside of WSL*
+Or use it as a one-off CLI, same subcommands as running `tex-timelapse.py`
+directly (`init`, `run`, `list`; see `--help`):
 ```bash
-docker run -it --rm -v ${PWD}/YOUR_SOURCE:/visualizer/source -v ${PWD}/tmp:/visualizer/tmp -v ${PWD}/output:/visualizer/output sebih/tex-timelapse source/YOUR_MAIN.tex
+docker compose run --rm tex-timelapse init myproject source/myproject.zip
+docker compose run --rm tex-timelapse run myproject timelapse
+docker compose run --rm tex-timelapse list
+```
+
+The server binds to loopback only by default, so that running it directly on
+a workstation is not silently exposed to the network. Inside a container it
+must be started with `server --host 0.0.0.0`, which the compose file already
+does.
+
+*Note: on Windows, prefer running from inside WSL rather than a
+Windows-side path - bind-mounting from the Windows filesystem into a WSL2
+container has a substantial I/O performance penalty.*
+
+#### plain docker
+Equivalent to the compose `tex-timelapse` service, without compose:
+```bash
+docker build --target app -t tex-timelapse .
+docker run -it --rm \
+  -p 5000:5000 \
+  -v "$PWD/projects:/tex-timelapse/projects" \
+  -v "$PWD/uploads:/tex-timelapse/uploads" \
+  tex-timelapse list
 ```
 
 ### python

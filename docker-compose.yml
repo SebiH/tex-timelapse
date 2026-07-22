@@ -1,8 +1,53 @@
-version: '3'
+# NOTE: the top-level "version:" key is obsolete in current Docker Compose
+# (Compose Specification) and has been dropped intentionally - it's no
+# longer required and produces a deprecation warning if present.
+
 services:
+  # The CLI / Flask+Socket.IO server (tex-timelapse.py). Two ways to use it:
+  #
+  #   docker compose up tex-timelapse
+  #     -> runs `python tex-timelapse.py server` (Flask on :5000), per the
+  #        `command:` below.
+  #
+  #   docker compose run --rm tex-timelapse init myproject source.zip
+  #   docker compose run --rm tex-timelapse run myproject output
+  #   docker compose run --rm tex-timelapse list
+  #     -> `run` overrides `command:` with whatever you pass, for one-off
+  #        CLI usage instead of the long-running server.
   tex-timelapse:
-      image: sebih/tex-timelapse:latest
-      stdin_open: true
-      tty: true
-      volumes:
-          - ./projects:/tex-timelapse/projects
+    build:
+      context: .
+      target: app
+    image: sebih/tex-timelapse:latest
+    # --host 0.0.0.0 is required: the server defaults to loopback only, which
+    # is unreachable from outside the container (both the published port below
+    # and the webui service's reverse proxy).
+    command: server --host 0.0.0.0
+    stdin_open: true
+    tty: true
+    ports:
+      - "5000:5000"
+    volumes:
+      # Project data (source checkouts, generated frames/thumbnails, output
+      # videos) - everything under Project's projects/<slug>/ directory.
+      - ./projects:/tex-timelapse/projects
+      # Where the web UI's /api/import endpoint writes uploaded zip files
+      # before handing them to Project.create().
+      - ./uploads:/tex-timelapse/uploads
+
+  # Serves the built web UI (webui/dist) and reverse-proxies /api and
+  # /socket.io through to the tex-timelapse service above, since the React
+  # app calls those as same-origin relative paths (see docker/nginx.conf
+  # for the full explanation, including the current blocker noted above).
+  #
+  # This service is optional - the CLI works fully without it. Run just
+  # `docker compose up tex-timelapse` if you only want the CLI/API.
+  webui:
+    build:
+      context: .
+      target: webui
+    image: sebih/tex-timelapse-webui:latest
+    ports:
+      - "8080:80"
+    depends_on:
+      - tex-timelapse

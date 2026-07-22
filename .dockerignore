@@ -1,1 +1,29 @@
+# Runtime/data directories - these are bind-mounted volumes (see
+# docker-compose.yml) and must never be baked into an image.
 projects/
+uploads/
+
+# git metadata / CI / editor config - irrelevant to the image, and .git can
+# be large.
+.git/
+.github/
+.vscode/
+.devcontainer/
+
+# Python build/cache artifacts
+__pycache__/
+*.pyc
+.mypy_cache/
+.pytest_cache/
+*.egg-info/
+.venv/
+
+# webui: node_modules and dist are (re)built from source inside the
+# webui-builder stage - don't ship a stale local copy into the build context.
+webui/node_modules/
+webui/dist/
+webui/bun.lock
+webui/bun.lockb
+
+# Large asset not needed to build or run the image.
+example.gif

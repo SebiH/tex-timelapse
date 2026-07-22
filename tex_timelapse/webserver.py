@@ -239,5 +239,9 @@ class WebServer:
     def send_message(self, message):
         self.socketio.emit('message', message)
 
-    def run(self):
-        self.socketio.run(self.app)
+    def run(self, host: str = '127.0.0.1', port: int = 5000):
+        # Flask-SocketIO defaults to 127.0.0.1, which is unreachable from
+        # outside a container. The default stays loopback-only so running the
+        # server on a workstation does not silently expose it to the network;
+        # the Docker image passes --host 0.0.0.0 explicitly.
+        self.socketio.run(self.app, host=host, port=port)
