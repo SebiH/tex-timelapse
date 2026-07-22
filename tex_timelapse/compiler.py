@@ -28,6 +28,15 @@ def cleanupFolder(project: Project, folder: str) -> None:
     rmtree(f"{folder}/latex", ignore_errors=True)
 
 def compileProject(project: Project, output: str, actions: List[Action], reporter: Reporter) -> None:
+    """Run `actions` over every snapshot in `project` using the module-level
+    thread pool, then encode the resulting frames with ffmpeg.
+
+    `actions` must already be initialised (see
+    `tex_timelapse.actions.create_and_init_actions`) - this function and
+    compileSnapshot() never call `Action.init()` themselves, since doing so
+    from inside a worker thread is what used to make every action's init()
+    a data race.
+    """
     snapshot_count = len(project.snapshots)
     concat_commits = int(project.config.get('concatCommits', -1) or -1)
     if concat_commits > 0:
@@ -105,6 +114,15 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
 
 
 def compileSnapshot(project: Project, snapshot: Snapshot, actions: List[Action], reporter: Reporter) -> Snapshot:
+    """Run `actions` over a single snapshot. May be called from a worker
+    thread (via compileProject's executor) or directly, e.g. by webserver.py
+    for a single-snapshot recompile.
+
+    `actions` must already be initialised - see compileProject's docstring.
+    This function never calls `Action.init()`, precisely because it can run
+    concurrently across many worker threads that would otherwise all race
+    to mutate the same shared Action instances.
+    """
     thread_id = threading.get_ident()
 
     workDir = initFolder(project, thread_id)
@@ -114,7 +132,6 @@ def compileSnapshot(project: Project, snapshot: Snapshot, actions: List[Action],
     reporter.update_progress(snapshot)
 
     for action in actions:
-        action.init(project)
         snapshot.jobs[action.getName()] = SnapshotStatus.IN_PROGRESS
         reporter.update_progress(snapshot)
 
