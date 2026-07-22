@@ -43,7 +43,10 @@ class PdfToImageAction(Action):
         os.rename(thumbnail_dir, thumbnail_save_dir)
 
         # save pages for use in the webserver / later steps
-        snapshot.pages = [filename for filename in glob(f'{snapshot_img_dir}/*.jpg')]
+        # store bare basenames only: workdir (and thus the absolute paths) is
+        # deleted after the run, so persisting absolute paths in snapshots.yaml
+        # would leave dangling references.
+        snapshot.pages = sorted(os.path.basename(filename) for filename in glob(f'{snapshot_img_dir}/*.jpg'))
 
         return SnapshotStatus.COMPLETED
 

@@ -25,7 +25,7 @@ class InitRepoAction(Action):
 
         # check for any changes to highlight them in the final output
         for file in snapshot.includes:
-            diffCmd = f'git diff --unified=0 HEAD HEAD~{diffHistory} {file}'
+            diffCmd = f'git diff --unified=0 HEAD~{diffHistory} HEAD {file}'
             diffOutput = snapshot.execute_cmd(diffCmd, ignore_error=True)
             if diffOutput != "":
                 snapshot.gitDiff[file] = diffOutput

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import subprocess
-from glob import glob
 import os
+from pathlib import Path
 import shutil
 from typing import Any, Dict, List, Optional
 import git
@@ -58,10 +58,14 @@ class Project:
 
     @staticmethod
     def list() -> list['Project']:
-        return [
-            Project.deserialize(file.split('/')[1])
-            for file in glob('projects/**/project.yaml', recursive=True)
-        ]
+        projects = []
+        for file in Path('projects').glob('**/project.yaml'):
+            with open(file, 'r') as f:
+                data = yaml.safe_load(f)
+            name = data.get('name') if data else None
+            if name:
+                projects.append(Project.deserialize(name))
+        return projects
     
     @staticmethod
     def deserialize(name: str, defaults: Optional[Dict[str, Any]] = None) -> 'Project':

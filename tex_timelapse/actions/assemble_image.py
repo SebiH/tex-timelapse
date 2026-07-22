@@ -42,7 +42,9 @@ class AssembleImageAction(Action):
 
     def run(self, snapshot: Snapshot) -> str:
         workDir = snapshot.getWorkDir()
-        rawImages = sorted(snapshot.pages)
+        # snapshot.pages only stores basenames (see PdfToImageAction) - resolve
+        # them against the workdir's images folder to get real paths.
+        rawImages = sorted(f'{workDir}/images/{page}' for page in snapshot.pages)
 
         # Retrieve image size from the first image
         image_size = Image.open(rawImages[0]).size
