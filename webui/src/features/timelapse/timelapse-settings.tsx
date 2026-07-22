@@ -25,9 +25,11 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { UIState } from '@/models/ui-state';
 import { TimelapseProject } from '@/models/project';
+import { TimelapseConfig } from '@/models/config';
 import { Button } from '@/components/ui/button';
 import { Play, Trash } from 'lucide-react';
 import { toast } from 'sonner';
+import { api } from '@/api/client';
 
 type TimelapseSettingsProps = {
     project: TimelapseProject;
@@ -37,21 +39,16 @@ const pdflatexCmd = 'latexmk -pdf -interaction=nonstopmode -synctex=1 -f';
 const lualatexCmd = 'latexmk -pdflatex=\'lualatex %O %S\' -interaction=nonstopmode -pdf -synctex=1 -f';
 const xetexCmd = 'latexmk -pdflatex=\'xelatex %O %S\' -interaction=nonstopmode -pdf -synctex=1 -f';
 
-const debounce = (func: any, timeout = 300) => {
-    let timer: any;
-    return (...args: any) => {
+function debounce<Args extends unknown[]>(func: (...args: Args) => void, timeout = 300): (...args: Args) => void {
+    let timer: ReturnType<typeof setTimeout>;
+    return (...args: Args) => {
         clearTimeout(timer);
-        timer = setTimeout(() => { func.apply(this, args); }, timeout);
+        timer = setTimeout(() => { func(...args); }, timeout);
     };
-};
+}
 
-const sendConfig = debounce(async (project: TimelapseProject, config: any) => {
-    // send to server
-    fetch(`/api/projects/${project.name}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ config })
-    });
+const sendConfig = debounce((project: TimelapseProject, config: TimelapseConfig) => {
+    api.updateProjectConfig(project.name, config).catch((e) => console.error(e));
 }, 1000);
 
 
@@ -78,7 +75,7 @@ export const TimelapseSettings = ({ project }: TimelapseSettingsProps) => {
         return () => sub.unsubscribe();
     }, []);        
 
-    const updateConfig = (key: string, value: any) => {
+    const updateConfig = <K extends keyof TimelapseConfig>(key: K, value: TimelapseConfig[K]) => {
         const newConfig = { ...config, [key]: value };
         UIState.setProject({ ...project, config: newConfig });
         sendConfig(project, newConfig);
@@ -97,13 +94,13 @@ export const TimelapseSettings = ({ project }: TimelapseSettingsProps) => {
     };
 
     const compileProject = async () => {
-        const success = await fetch(`/api/projects/${project.name}/run`);
-
-        if (success) {
+        try {
+            await api.runProject(project.name);
             toast.success('Video created', {
                 description: 'Project rendered successfully',
             });
-        } else {
+        } catch (e) {
+            console.error(e);
             toast.error('Rendering error', {
                 description: 'Project could not be rendered',
             });
@@ -220,18 +217,18 @@ export const TimelapseSettings = ({ project }: TimelapseSettingsProps) => {
                 <div className='grid grid-cols-2 gap-4'>
                     <div className='grid gap-3'>
                         <Label>Rows</Label>
-                        <Input type='number' placeholder='3' value={config.rows} onChange={e => updateConfig('rows', e.target.value)} min={1} />
+                        <Input type='number' placeholder='3' value={config.rows} onChange={e => updateConfig('rows', e.target.valueAsNumber)} min={1} />
                     </div>
                     <div className='grid gap-3'>
                         <Label>Columns</Label>
-                        <Input type='number' placeholder='4' value={config.columns} onChange={e => updateConfig('columns', e.target.value)} min={1} />
+                        <Input type='number' placeholder='4' value={config.columns} onChange={e => updateConfig('columns', e.target.valueAsNumber)} min={1} />
                     </div>
                 </div>
 
                 <div className='grid grid-cols-2 gap-4'>
                     <div className='grid gap-3'>
                         <Label>Video Framerate</Label>
-                        <Input type='number' placeholder='4' value={config.framerate} onChange={e => updateConfig('framerate', e.target.value)} min={1} />
+                        <Input type='number' placeholder='4' value={config.framerate} onChange={e => updateConfig('framerate', e.target.valueAsNumber)} min={1} />
                     </div>
                     <div className='grid gap-3'>
                         <Label>Estimated Duration</Label>
