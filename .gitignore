@@ -2,4 +2,13 @@
 /projects/
 /uploads/
 
+# python
 __pycache__/
+.mypy_cache/
+.pytest_cache/
+*.egg-info/
+.venv/
+
+# webui
+node_modules/
+dist/

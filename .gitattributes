@@ -1,0 +1,17 @@
+# Normalize all text files to LF in the repository.
+# Without this, editing from Windows/WSL rewrites whole files as CRLF and every
+# diff becomes unreviewable line-ending churn.
+* text=auto eol=lf
+
+# Binary assets — never touch these.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.mp4 binary
+*.woff binary
+*.woff2 binary
