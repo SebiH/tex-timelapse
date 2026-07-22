@@ -4,9 +4,8 @@ from tex_timelapse.actions.action import Action
 from tex_timelapse.project import Project
 from tex_timelapse.snapshot import Snapshot, SnapshotStatus
 from PIL import Image, ImageFilter, ImageDraw
-from glob import glob
 import numpy as np
-from PyPDF2 import PdfReader
+import pypdfium2 as pdfium  # type: ignore[import-untyped]  # no py.typed marker/stubs published
 
 # see https://stackoverflow.com/a/46877433/4090817
 def pil_grid(images, max_horiz=np.iinfo(int).max):
@@ -136,12 +135,15 @@ class AssembleImageAction(Action):
 
 
     def get_pdf_dimensions(self, pdf_path: str) -> Tuple[float, float]:
-        with open(pdf_path, 'rb') as f:
-            reader = PdfReader(f)
-            page = reader.pages[0] # TODO: pass page number as argument
-            media_box = page.mediabox
-            pdf_width = media_box.right - media_box.left
-            pdf_height = media_box.top - media_box.bottom
+        doc = pdfium.PdfDocument(pdf_path)
+        try:
+            page = doc.get_page(0) # TODO: pass page number as argument
+            try:
+                pdf_width, pdf_height = page.get_size()
+            finally:
+                page.close()
+        finally:
+            doc.close()
         return float(pdf_width), float(pdf_height)
 
     def get_image_dimensions(self, image_path: str) -> Tuple[float, float]:

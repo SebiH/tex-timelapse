@@ -11,4 +11,4 @@ types-python-slugify
 flask
 flask-socketio
 flask-cors
-PyPDF2
+pypdfium2
