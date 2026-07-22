@@ -1,8 +1,7 @@
 import './histogram-slider.scss';
 import { TimelapseSnapshot } from '../../models/snapshot';
 import { Histogram } from './histogram';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { UIState } from '@/models/ui-state';
 
 type Props = {
@@ -46,7 +45,7 @@ export const HistogramSlider = ({ snapshots, startSnapshot }: Props) => {
     return (
         <div className="histogram-slider-container">
             <button className='flex flex-row gap-2 mr-2' onClick={handlePrevious.bind(this)}>
-                <FontAwesomeIcon icon={faChevronLeft} />
+                <ChevronLeft className='size-4' />
             </button>
 
             <div style={{ cursor: 'pointer', width: '100%' }} onClick={handleHistogramClick.bind(this)}>
@@ -54,7 +53,7 @@ export const HistogramSlider = ({ snapshots, startSnapshot }: Props) => {
             </div>
 
             <button className='flex flex-row gap-2 ml-2' onClick={handleNext.bind(this)}>
-                <FontAwesomeIcon icon={faChevronRight} />
+                <ChevronRight className='size-4' />
             </button>
 
             <div className='slider-indicator' style={{ left: `${(snapshots.indexOf(startSnapshot) / (snapshots.length - 1)) * 100}%` }}>
