@@ -59,9 +59,11 @@ docker run -it --rm \
   - texliveonfly - either via package manager (e.g., `apt install texlive-extra-utils`) or texlive manager (`tlmgr install texliveonfly`)
   - latexmk
   - git
-  - pdftoppm (e.g., from `poppler-utils`)
   - ffmpeg
   - python3
+
+  PDF rasterisation needs no system package - it goes through the `pypdfium2`
+  wheel, which bundles PDFium. (`poppler-utils`/`pdftoppm` is no longer required.)
 - Install python dependencies: `pip install -r requirements.txt`
 - Run: `python tex-timelapse.py PATH/TO/MAIN.tex`
 
