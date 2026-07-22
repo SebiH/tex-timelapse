@@ -1,7 +1,8 @@
-from typing import Dict, Set
+from typing import Dict, Set, List, Tuple
 from tex_timelapse.actions.action import Action
 from tex_timelapse.project import Project
 from tex_timelapse.snapshot import Snapshot, SnapshotStatus
+from pathlib import Path
 import re
 import os
 
@@ -67,13 +68,11 @@ class CompileLatexAction(Action):
                 # - \includegraphics could be split over multiple lines
                 # - \includegraphics could be in in a macro
                 # - we need to consider \graphicspath{...}
-                occurrences = snapshot.execute_cmd(f'grep -rn \\\\includegraphics.*{basefile} .', ignore_error=True)
+                occurrences = self.findIncludeGraphicsOccurrences(Path(workDir), basefile)
 
-                # this returns something like 'file.tex:123:\includegraphics{file}'
+                # this returns (file, line) pairs, e.g. ('./file.tex', 123)
                 # -> we only need the line number and the file name
-                for occurrence in occurrences.splitlines():
-                    file = occurrence.split(':')[0]
-                    line = int(occurrence.split(':')[1])
+                for file, line in occurrences:
                     if changedFiles.get(file) is None:
                         changedFiles[file] = set()
 
@@ -112,6 +111,39 @@ class CompileLatexAction(Action):
 
         return SnapshotStatus.COMPLETED
 
+
+    def findIncludeGraphicsOccurrences(self, workDir: Path, basefile: str) -> List[Tuple[str, int]]:
+        """Replacement for `grep -rn \\includegraphics.*{basefile} .` (BSD/GNU
+        grep dialects differ enough on this to be a portability concern, and
+        spawning grep over the whole tree per changed non-.tex file is slow).
+
+        \\includegraphics only ever appears in .tex sources, so we only need
+        to scan those rather than every file in the work dir. Returns
+        (file, line) pairs shaped like the old 'file.tex:123:...' output,
+        with file './'-prefixed the same way `grep -rn ... .` would print it.
+
+        Note: unlike the old grep call, `basefile` is treated as a literal
+        string (via re.escape) rather than a BRE, so characters like '.' in
+        a path no longer act as wildcards. This is a deliberate behaviour
+        change: the old regex-injection was already dialect-dependent
+        (GNU/BSD BRE differ on several metacharacters), so treating it as a
+        literal is strictly more correct and portable, not just different."""
+        pattern = re.compile(r'\\includegraphics.*' + re.escape(basefile))
+        results: List[Tuple[str, int]] = []
+
+        texFiles = [p for p in workDir.rglob('*.tex') if '.git' not in p.relative_to(workDir).parts]
+        for texFile in sorted(texFiles, key=lambda p: p.relative_to(workDir).as_posix()):
+            try:
+                content = texFile.read_text(encoding='utf-8', errors='replace')
+            except OSError:
+                continue
+
+            relPath = f'./{texFile.relative_to(workDir).as_posix()}'
+            for lineNo, line in enumerate(content.splitlines(), start=1):
+                if pattern.search(line):
+                    results.append((relPath, lineNo))
+
+        return results
 
     def reset(self, snapshot: Snapshot) -> None:
         # automatically resets due to compilation in temp. runner
