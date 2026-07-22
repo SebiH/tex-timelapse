@@ -43,7 +43,7 @@ project.yaml      name + config (copied from default_config.yaml at init)
 snapshots.yaml    per-commit state, the pipeline's resume/cache file
 source/           unpacked zip, must contain .git
 workdir/<tid>/    scratch checkouts, one per worker thread, deleted after a run
-thumbnails/<sha>/ 600px page previews for the web UI
+thumbnails/<sha>/ 300px page previews for the web UI
 frames/           frame_%09d.png, the video's input
 output/           <output>.mp4
 ```
@@ -55,7 +55,7 @@ output/           <output>.mp4
 1. `InitRepoAction` — `git reset --hard <sha>`, finds the main `.tex` (first file containing `\begin{document}`), walks `\include`/`\input`/`\addbibresource`/`\includegraphics` to build `includes`, stores `git diff --unified=0` per included file.
 2. `ReplaceTextAction` — applies `text_replacements` from config (workaround for characters that break the compiler) and strips `\includeonly`.
 3. `CompileLatexAction` — runs `texliveonfly` (to pull missing packages), then `config['latexCmd']` once. The default is `latexmk`, which internally handles reruns and the bibliography pass; a custom non-latexmk command gets a single pass only. Success is judged by whether a PDF appeared, not by exit code. Then converts diff line numbers to page coordinates with `synctex view`, writing `changed_pages`.
-4. `PdfToImageAction` — `pdftoppm` for full-size pages (`pages`) and thumbnails.
+4. `PdfToImageAction` — renders each page once with `pypdfium2` at 150/72 scale (matching `pdftoppm`'s old 150 DPI output), saving full-size pages (`pages`) plus a Pillow-downscaled 300px thumbnail. Filenames keep `pdftoppm`'s zero-padding (`page-01.jpg`) because several plain lexicographic sorts depend on it.
 5. `AssembleImageAction` — scales/blurs pages, draws the change overlays, tiles into `rows × columns`, writes `frames/frame_<index>.png`.
 
 **compiler.py** — `compileProject` fans snapshots out over a module-level `ThreadPoolExecutor` (`setThreads()` to resize), then runs ffmpeg over `frames/*.png`. `compileSnapshot` runs the action list for one snapshot and is also called directly by the web server to recompile a single commit. Workdirs are keyed by `threading.get_ident()`, so a worker reuses (and mutates) one checkout across snapshots — actions must not assume a clean tree beyond what `git reset --hard` gives them.
@@ -71,4 +71,5 @@ output/           <output>.mp4
 - ffmpeg globs `frames/*.png`, so a dropped frame shifts the video rather than erroring. `compileProject` now re-raises on failure so a broken run stops before encoding.
 - `README.md` documents the old flag-based CLI (`tex-timelapse.py main.tex --rows ...`) and predates the project/subcommand model. Treat `tex-timelapse.py` and `default_config.yaml` as the source of truth; `todo.txt` tracks the actual roadmap.
 - On this WSL checkout, `mypy` crashes with a sqlite `unable to open database file` error because `.mypy_cache` lives on the `/mnt/s` drvfs mount. Pass `--cache-dir` pointing somewhere on the Linux filesystem.
-- The web UI cannot be built here: Node is v12, Vite 5 needs 18+. TypeScript changes are currently unverifiable by compilation.
+- The web UI cannot be built with the Node on this machine (v12; Vite 5 needs 18+). `bun` 1.3.9 works as a stand-in, but note `bun x tsc` re-enters Node via the shebang — run the JS directly instead: `bun node_modules/typescript/lib/tsc.js --noEmit` and `bun node_modules/vite/bin/vite.js build`. npm remains the project standard; `bun.lock` is gitignored.
+- Shell-outs must stay POSIX-portable — no GNU-only flags. `find -wholename` and the `grep -r` scans were removed for exactly this reason (they broke on macOS); prefer `pathlib`/`re` over spawning `find`/`grep`.
