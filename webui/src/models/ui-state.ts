@@ -2,6 +2,7 @@ import { TimelapseProject } from './project';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { TimelapseSnapshot } from './snapshot';
 import { io } from 'socket.io-client';
+import { api } from '@/api/client';
 
 export const UIState = {
     project: new BehaviorSubject<TimelapseProject | null>(null),
@@ -26,16 +27,10 @@ export const UIState = {
         const project = this.project.value;
         if (!project) return false;
 
-        const request = await fetch(`/api/projects/${project.name}/snapshot/${commit_sha}/run`);
         try {
-            const response = await request.json();
-            if (response.success) {
-                this.updateSnapshot(project, response.snapshot as TimelapseSnapshot);
-            } else {
-                console.error(response.error);
-            }
-
-            return response.success as boolean;
+            const snapshot = await api.runSnapshot(project.name, commit_sha);
+            this.updateSnapshot(project, snapshot);
+            return true;
         } catch (e) {
             console.error(e);
             return false;
@@ -43,31 +38,21 @@ export const UIState = {
     },
 
     async resetProjectSnapshots(project: TimelapseProject) {
-        return fetch(`/api/projects/${project.name}/reset`).then(async (response) => {
-            if (response.ok) {
-                const data = await response.json();
+        await api.resetProject(project.name);
 
-                if (data.success) {
-                    const snapshots: TimelapseSnapshot[] = UIState.project.value?.snapshots.map((s: TimelapseSnapshot) => {
-                        return { ...s, status: 'Unknown', pages: [] };
-                    }) || [];
+        const snapshots: TimelapseSnapshot[] = UIState.project.value?.snapshots.map((s: TimelapseSnapshot) => {
+            return { ...s, status: 'Unknown', pages: [] };
+        }) || [];
 
-                    if (UIState.project.value) {
-                        UIState.project.value.snapshots = snapshots;
-                    }
+        if (UIState.project.value) {
+            UIState.project.value.snapshots = snapshots;
+        }
 
-                    UIState.setProject({ ...project, snapshots });
-                    
-                    for (const snapshot of snapshots) {
-                        snapshotUpdates.next(snapshot);
-                    }
-                } else {
-                    throw new Error(data.error);
-                }
-            } else {
-                throw new Error('Server error');
-            }
-        });
+        UIState.setProject({ ...project, snapshots });
+
+        for (const snapshot of snapshots) {
+            snapshotUpdates.next(snapshot);
+        }
     },
 
     updateSnapshot(project: TimelapseProject, snapshot: TimelapseSnapshot) {
@@ -95,17 +80,10 @@ export const UIState = {
         const project = this.project.value;
         if (!project) return false;
 
-        const path = `/api/projects/${project.name}/snapshot/${commit_sha}/reset`;
-        const request = await fetch(stage ? `${path}/${encodeURIComponent(stage)}` : path);
         try {
-            const response = await request.json();
-            if (response.success) {
-                this.updateSnapshot(project, response.snapshot as TimelapseSnapshot);
-            } else {
-                console.error(response.error);
-            }
-
-            return response.success as boolean;
+            const snapshot = await api.resetSnapshot(project.name, commit_sha, stage);
+            this.updateSnapshot(project, snapshot);
+            return true;
         } catch (e) {
             console.error(e);
             return false;

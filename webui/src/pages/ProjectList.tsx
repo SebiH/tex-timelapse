@@ -1,20 +1,15 @@
 import { Link } from 'react-router-dom';
 
 import './ProjectList.scss';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '@/components/ui/button';
-import { CirclePlus } from 'lucide-react';
+import { CirclePlus, ExternalLink } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { api } from '@/api/client';
 
 const ProjectList = () => {
     const { data, isLoading, isError, isSuccess } = useQuery({
         queryKey: ['projects'],
-        queryFn: async () => {
-            const data = await fetch('/api/projects');
-            const response = await data.json();
-            return response.projects as string[];
-        }
+        queryFn: () => api.listProjects()
     });
 
     return (
@@ -32,7 +27,7 @@ const ProjectList = () => {
                     <Link to={`/projects/${projectName}`} className='project-link' key={projectName}>
                         <div className='project-entry'>
                             {projectName}
-                            <FontAwesomeIcon icon={faUpRightFromSquare} />
+                            <ExternalLink className='size-4' />
                         </div>
 
                     </Link>

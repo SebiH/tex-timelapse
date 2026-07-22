@@ -15,6 +15,7 @@ import { AlertCircle, Settings } from 'lucide-react';
 import './snapshot-pages.scss';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
+import { api } from '@/api/client';
 
 export interface SnapshotPagesProps {
     project: TimelapseProject,
@@ -49,7 +50,7 @@ export const SnapshotPages = (props: SnapshotPagesProps) => {
                     {pageChanged && <div className='snapshot-page-changed' />}
                     {detailChanges}
 
-                    <img src={`/api/projects/${props.project.name}/snapshot/${props.snapshot.commit_sha}/image/${pageName}`}
+                    <img src={api.getSnapshotImageUrl(props.project.name, props.snapshot.commit_sha, pageName as string)}
                         className='max-w-full'
                         style={{ 'filter': `blur(${props.blur}px)` }}
                         alt={`Page ${index}`}

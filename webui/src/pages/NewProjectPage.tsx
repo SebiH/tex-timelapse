@@ -32,6 +32,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { api } from '@/api/client';
 
 const FormSchema = z.object({
     name: z.string().min(2, {
@@ -48,31 +49,16 @@ export const NewProjectPage = () => {
 
     const onSubmit = async (data: z.infer<typeof FormSchema>) => {
         setIsUploading(true);
-        const formData = new FormData();
-        formData.append('name', data.name);
-        formData.append('file', data.file[0]);
 
         try {
-            const response = await fetch('/api/import', {
-                method: 'POST',
-                body: formData,
-            });
-
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-
-            const result = await response.json();
-            if (result.error) {
-                throw new Error(result.error);
-            }
+            const project = await api.importProject(data.name, data.file[0]);
 
             // navigate to new project page
             toast.success('Project imported successfully');
-            navigate(`/projects/${result.project.name}`);
+            navigate(`/projects/${project.name}`);
 
         } catch (error) {
-            console.error('There was a problem with the fetch operation:', error);
+            console.error('There was a problem importing the project:', error);
             toast.error('Failed to import project');
         }
 
