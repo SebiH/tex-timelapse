@@ -6,6 +6,7 @@ from tex_timelapse.snapshot import Snapshot, SnapshotStatus
 from PIL import Image, ImageFilter, ImageDraw
 import numpy as np
 import pypdfium2 as pdfium  # type: ignore[import-untyped]  # no py.typed marker/stubs published
+from tex_timelapse.pdfium_lock import PDFIUM_LOCK
 
 # see https://stackoverflow.com/a/46877433/4090817
 def pil_grid(images, max_horiz=np.iinfo(int).max):
@@ -135,15 +136,19 @@ class AssembleImageAction(Action):
 
 
     def get_pdf_dimensions(self, pdf_path: str) -> Tuple[float, float]:
-        doc = pdfium.PdfDocument(pdf_path)
-        try:
-            page = doc.get_page(0) # TODO: pass page number as argument
+        # Serialised against every other pdfium call - PDFium is not
+        # thread-safe and snapshots are processed concurrently. See
+        # pdfium_lock.py.
+        with PDFIUM_LOCK:
+            doc = pdfium.PdfDocument(pdf_path)
             try:
-                pdf_width, pdf_height = page.get_size()
+                page = doc.get_page(0) # TODO: pass page number as argument
+                try:
+                    pdf_width, pdf_height = page.get_size()
+                finally:
+                    page.close()
             finally:
-                page.close()
-        finally:
-            doc.close()
+                doc.close()
         return float(pdf_width), float(pdf_height)
 
     def get_image_dimensions(self, image_path: str) -> Tuple[float, float]:
