@@ -11,7 +11,7 @@ class CompileLatexAction(Action):
         return 'Compile LaTeX'
 
     def init(self, project: Project) -> None:
-        self.latexCmd = project.config['latexCmd']
+        self.latexCmd = project.config.latexCmd
         # TODO: texliveonfly?
         pass
 

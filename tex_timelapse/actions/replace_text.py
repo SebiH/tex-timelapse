@@ -10,7 +10,7 @@ class ReplaceTextAction(Action):
         return 'Replace Text'
 
     def init(self, project: Project) -> None:
-        self.text_replacements = project.config['text_replacements']
+        self.text_replacements = project.config.text_replacements
 
     def cleanup(self) -> None:
         pass

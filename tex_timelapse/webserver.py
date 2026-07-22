@@ -12,6 +12,7 @@ from tex_timelapse.reporters.web_reporter import WebReporter
 from tex_timelapse.compiler import compileProject, compileSnapshot
 from tex_timelapse.project import Project
 from tex_timelapse.snapshot import Snapshot, SnapshotStatus
+from tex_timelapse.config import Config
 
 from .actions import create_and_init_actions, get_stage_names
 
@@ -46,7 +47,11 @@ class WebServer:
                 project = Project.deserialize(name)
                 if request.json:
                     if 'config' in request.json:
-                        project.config = request.json['config']
+                        # missing fields in the posted config fall back to
+                        # the project's current values, not the global
+                        # defaults - a partial edit shouldn't reset
+                        # untouched fields.
+                        project.config = Config.from_dict(request.json['config'], defaults=project.config.to_dict())
                         project.serialize()
                     # TODO: support name change
                     return jsonify({ 'success': True })

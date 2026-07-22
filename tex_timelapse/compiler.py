@@ -37,8 +37,14 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
     from inside a worker thread is what used to make every action's init()
     a data race.
     """
+    workers = project.config.workers
+    if workers is not None and workers > 0:
+        setThreads(workers)
+    # workers <= 0 (including the -1 default) or absent: leave the existing
+    # (default-sized) executor as-is.
+
     snapshot_count = len(project.snapshots)
-    concat_commits = int(project.config.get('concatCommits', -1) or -1)
+    concat_commits = project.config.concatCommits
     if concat_commits > 0:
         snapshot_count = snapshot_count // concat_commits
 
@@ -98,8 +104,8 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
     os.makedirs(f'{project.projectFolder}/frames', exist_ok=True)
 
     os.makedirs(f'{project.projectFolder}/output', exist_ok=True)
-    framerate = project.config['framerate']
-    videoscale = float(project.config.get('videoscale', 0.25) or 0.25)
+    framerate = project.config.framerate
+    videoscale = project.config.videoscale
     cmd = f"""ffmpeg -y -framerate {framerate}
         -pattern_type glob -i {project.projectFolder}/frames/*.png
         -c:v libx264 -movflags +faststart

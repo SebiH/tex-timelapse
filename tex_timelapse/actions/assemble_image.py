@@ -28,10 +28,10 @@ class AssembleImageAction(Action):
         return 'Assemble Image'
 
     def init(self, project: Project) -> None:
-        self.blur = float(project.config['blur'])
-        self.rows = int(project.config['rows'])
-        self.columns = int(project.config['columns'])
-        self.highlightChanges = bool(project.config['highlightChanges'])
+        self.blur = project.config.blur
+        self.rows = project.config.rows
+        self.columns = project.config.columns
+        self.highlightChanges = project.config.highlightChanges
         self.project_img_dir = f'{project.projectFolder}/frames'
 
         os.makedirs(self.project_img_dir, exist_ok=True)

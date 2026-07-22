@@ -11,7 +11,7 @@ class InitRepoAction(Action):
         return "Init Repository"
 
     def init(self, project: Project) -> None:
-        self.concatCommits = project.config.get('concatCommits', -1)
+        self.concatCommits = project.config.concatCommits
 
     def cleanup(self) -> None:
         pass

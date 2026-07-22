@@ -53,7 +53,7 @@ class Project:
     def to_dict(self) -> dict[str, Any]:
         return {
             'name': self.name,
-            'config': self.config
+            'config': self.config.to_dict()
         }
 
     @staticmethod
@@ -66,19 +66,31 @@ class Project:
             if name:
                 projects.append(Project.deserialize(name))
         return projects
-    
+
+    @staticmethod
+    def _load_default_config_dict() -> Dict[str, Any]:
+        """Raw contents of default_config.yaml, used as the fallback for
+        any config field missing from a project's own project.yaml."""
+        try:
+            with open('./default_config.yaml', 'r') as f:
+                return yaml.safe_load(f) or {}
+        except FileNotFoundError:
+            return {}
+
     @staticmethod
     def deserialize(name: str, defaults: Optional[Dict[str, Any]] = None) -> 'Project':
         with open(f'./projects/{slugify(name)}/project.yaml', 'r') as f:
-            data = yaml.safe_load(f)
+            data = yaml.safe_load(f) or {}
 
-        if defaults is None:
-            defaults = {}
+        # config fields missing from this project's own project.yaml fall
+        # back to default_config.yaml; `defaults` lets a caller layer
+        # additional overrides on top of that.
+        default_config = Project._load_default_config_dict()
+        if defaults:
+            default_config = {**default_config, **defaults}
 
-        project_data = {**defaults, **data}
-
-        project = Project(project_data["name"])
-        project.config = project_data["config"]
+        project = Project(data["name"])
+        project.config = Config.from_dict(data.get("config"), defaults=default_config)
         return project
 
 
@@ -109,8 +121,8 @@ class Project:
             raise Exception(f'"{cmd}" failed with error: {output.stderr}')
 
         # load default config
-        with open('./default_config.yaml', 'r') as f:
-            project.config = yaml.safe_load(f)
+        default_config = Project._load_default_config_dict()
+        project.config = Config.from_dict(default_config, defaults=default_config)
 
         project.serialize()
 
