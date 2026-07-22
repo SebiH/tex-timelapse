@@ -71,22 +71,22 @@ export const UIState = {
     },
 
     updateSnapshot(project: TimelapseProject, snapshot: TimelapseSnapshot) {
-        // snapshot.pages = snapshot.pages.sort();
-        // const index = project.snapshots.findIndex(s => s.commit_sha === snapshot.commit_sha);
-        // const nextProject: TimelapseProject = {
-        //     ...project,
-        //     snapshots: [
-        //         ...project.snapshots.slice(0, index),
-        //         snapshot as TimelapseSnapshot,
-        //         ...project.snapshots.slice(index + 1)
-        //     ]
-        // };
-        // this.project.next(nextProject);
+        snapshot.pages = snapshot.pages.sort();
+        const index = project.snapshots.findIndex(s => s.commit_sha === snapshot.commit_sha);
+        const nextProject: TimelapseProject = {
+            ...project,
+            snapshots: [
+                ...project.snapshots.slice(0, index),
+                snapshot as TimelapseSnapshot,
+                ...project.snapshots.slice(index + 1)
+            ]
+        };
+        this.project.next(nextProject);
 
-        // // update current snapshot if it's the same (since it might have changed)
-        // if (this.currentSnapshot.value?.commit_sha === snapshot.commit_sha) {
-        //     this.currentSnapshot.next(snapshot as TimelapseSnapshot);
-        // }
+        // update current snapshot if it's the same (since it might have changed)
+        if (this.currentSnapshot.value?.commit_sha === snapshot.commit_sha) {
+            this.currentSnapshot.next(snapshot as TimelapseSnapshot);
+        }
     },
 
     async resetSnapshot(commit_sha: string, stage?: number) {

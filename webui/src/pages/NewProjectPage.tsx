@@ -69,7 +69,7 @@ export const NewProjectPage = () => {
 
             // navigate to new project page
             toast.success('Project imported successfully');
-            navigate(`/projects/${result.name}`);
+            navigate(`/projects/${result.project.name}`);
 
         } catch (error) {
             console.error('There was a problem with the fetch operation:', error);
