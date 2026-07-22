@@ -123,8 +123,9 @@ class WebServer:
                 return { 'success': False, 'error': str(e) }
 
 
+        @self.app.route('/api/projects/<name>/snapshot/<snapshot_sha>/reset')
         @self.app.route('/api/projects/<name>/snapshot/<snapshot_sha>/reset/<stage>')
-        def __resetSnapshot(name, snapshot_sha, stage):
+        def __resetSnapshot(name, snapshot_sha, stage=None):
             try:
                 project = Project.deserialize(name)
                 project.loadSnapshots()

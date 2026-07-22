@@ -89,11 +89,14 @@ export const UIState = {
         }
     },
 
-    async resetSnapshot(commit_sha: string, stage?: number) {
+    // `stage` is an action name as reported by the server (e.g. 'Compile LaTeX');
+    // that stage and every later one are reset. Omit it to reset all stages.
+    async resetSnapshot(commit_sha: string, stage?: string) {
         const project = this.project.value;
         if (!project) return false;
 
-        const request = await fetch(`/api/projects/${project.name}/snapshot/${commit_sha}/reset/${stage}`);
+        const path = `/api/projects/${project.name}/snapshot/${commit_sha}/reset`;
+        const request = await fetch(stage ? `${path}/${encodeURIComponent(stage)}` : path);
         try {
             const response = await request.json();
             if (response.success) {

@@ -54,7 +54,7 @@ output/           <output>.mp4
 
 1. `InitRepoAction` — `git reset --hard <sha>`, finds the main `.tex` (first file containing `\begin{document}`), walks `\include`/`\input`/`\addbibresource`/`\includegraphics` to build `includes`, stores `git diff --unified=0` per included file.
 2. `ReplaceTextAction` — applies `text_replacements` from config (workaround for characters that break the compiler) and strips `\includeonly`.
-3. `CompileLatexAction` — lualatex → biber → lualatex ×2, then converts diff line numbers to page coordinates with `synctex view`, writing `changed_pages`.
+3. `CompileLatexAction` — runs `texliveonfly` (to pull missing packages), then `config['latexCmd']` once. The default is `latexmk`, which internally handles reruns and the bibliography pass; a custom non-latexmk command gets a single pass only. Success is judged by whether a PDF appeared, not by exit code. Then converts diff line numbers to page coordinates with `synctex view`, writing `changed_pages`.
 4. `PdfToImageAction` — `pdftoppm` for full-size pages (`pages`) and thumbnails.
 5. `AssembleImageAction` — scales/blurs pages, draws the change overlays, tiles into `rows × columns`, writes `frames/frame_<index>.png`.
 
@@ -66,9 +66,9 @@ output/           <output>.mp4
 
 ## Gotchas
 
-- `snapshots.yaml` is loaded with `yaml.CBaseLoader`, so **every value comes back as a string**. Config values are likewise strings once round-tripped through `project.yaml` (see `projects/sample/project.yaml`: `rows: '1'`). Always cast (`int(...)`, `float(...)`, and note `bool('false')` is `True`) when reading config or snapshot fields.
-- The action list is duplicated in `tex-timelapse.py:runProject` and twice in `webserver.py`. A new action must be added to all of them.
-- ffmpeg globs `frames/*.png`, so a failed snapshot silently drops a frame rather than erroring.
-- `config['latexCmd']` is read by `CompileLatexAction.init` but unused — the compile commands are hardcoded to lualatex/biber.
-- `run --stage` compares an `int` against `action.getName()` (a string), so it never matches and the flag is currently a no-op.
+- `snapshots.yaml` is loaded with `yaml.CBaseLoader`, so **every value comes back as a string**. `project.yaml` uses `safe_load`, so config values keep whatever type they were written with — and the web UI POSTs `e.target.value` **strings** for numeric fields like `rows`/`columns`/`framerate` while sliders POST numbers (see `projects/sample/project.yaml`: `rows: '1'`). Always cast (`int(...)`, `float(...)`, and note `bool('false')` is `True`) when reading config or snapshot fields.
+- The action list is duplicated in `tex-timelapse.py:runProject` and three times in `webserver.py`. A new action must be added to all of them.
+- ffmpeg globs `frames/*.png`, so a dropped frame shifts the video rather than erroring. `compileProject` now re-raises on failure so a broken run stops before encoding.
 - `README.md` documents the old flag-based CLI (`tex-timelapse.py main.tex --rows ...`) and predates the project/subcommand model. Treat `tex-timelapse.py` and `default_config.yaml` as the source of truth; `todo.txt` tracks the actual roadmap.
+- On this WSL checkout, `mypy` crashes with a sqlite `unable to open database file` error because `.mypy_cache` lives on the `/mnt/s` drvfs mount. Pass `--cache-dir` pointing somewhere on the Linux filesystem.
+- The web UI cannot be built here: Node is v12, Vite 5 needs 18+. TypeScript changes are currently unverifiable by compilation.

@@ -1,0 +1,32 @@
+- [x] Import/create projects
+- Snapshot view
+    - [ ] Snapshot selection
+        - [ ] multiple snapshots (buckets)
+        - [ ] show date range below?
+    - [x] Loading indicator while compiling snapshot
+    - [ ] disable buttons while snapshot is compiling
+- timelapse view
+    - [ ] page preview
+        - [ ] cols/rows
+        - [ ] blur
+        - [ ] crop
+    - [x] save button (save automatically?)
+    - [x] render
+    - Snapshot selection
+        - [ ] linear/timeline view
+        - [ ] Range
+    - [ ] templates for image cropping
+    - [ ] flag for 'force completion' with hint that it may result in weird pages
+- [ ] video view
+- [ ] update README
+- Optimizations / features
+    - [ ] Split snapshot slider into multiple components
+    - [ ] if previous snapshots failed, add highlight in current snapshot (requires sequential rendering)
+    - [ ] stage-based rendering to individual rendering?
+    - [ ] allow import onto existing project (extending it)?
+    - [ ] overleaf import (with updates, steps/history resolution)
+    - [ ] change detection: flags for details
+    - [ ] change detection: merge overlapping boxes?
+    - [ ] blur relative to image size
+- Bugs
+    - diss: not compiling (lualatex?) -> check if "apk --no-cache add texmf-dist-most" can replace latex installation (and texliveonfly)
