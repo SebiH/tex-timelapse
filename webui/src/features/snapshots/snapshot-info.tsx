@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,14 +18,11 @@ export interface SnapshotInfoProps {
     snapshot: TimelapseSnapshot
 }
 
-const jobs = [
-    { name: 'Init Repository' },
-    { name: 'Compile LaTeX' },
-    { name: 'PDF to Image' },
-    { name: 'Assemble Image' }
-];
-
 export const SnapshotInfo = (props: SnapshotInfoProps) => {
+    // derive the pipeline stage list from the snapshot's own jobs map
+    // instead of a hardcoded list, so stages like 'Replace Text' show up
+    const jobs = Object.keys(props.snapshot.jobs).map((name) => ({ name }));
+
     const compileSnapshot = async () => {
         const commitSha = props.snapshot.commit_sha;
         const success = await UIState.compileSnapshot(commitSha);
@@ -82,13 +80,13 @@ export const SnapshotInfo = (props: SnapshotInfoProps) => {
                     <ScrollArea className="h-32 w-full rounded-md border">
                         <div className="p-4">
                             {props.snapshot.includes.map((f) => (
-                                <>
-                                    <div key={f} className="text-sm">
+                                <Fragment key={f}>
+                                    <div className="text-sm">
                                         {f.replace(/^\.\//, '')}
                                         { f === props.snapshot.main_tex_file && <span className="text-xs text-gray-500"> (Main TeX File)</span>}
                                     </div>
                                     <Separator className="my-2" />
-                                </>
+                                </Fragment>
                             ))}
                         </div>
                     </ScrollArea>
