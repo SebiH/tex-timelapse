@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import sys
 
 from tex_timelapse.reporters.terminal_reporter import TerminalReporter
 from tex_timelapse.compiler import compileProject
@@ -52,8 +53,10 @@ runParser.add_argument(
 
 runParser.add_argument(
     '--stage',
-    type=int,
-    help='Start from stage (default: all)')
+    type=str,
+    help='Start from stage (default: all). Name of one of the pipeline actions '
+         '(e.g. "Init Repository", "Replace Text", "Compile LaTeX", "PDF to Image", '
+         '"Assemble Image"), case-insensitive.')
 
 # TODO: non-project-specific general arguments; add these to docker-compose.yml
 # workers: int # TODO: -1 should set to cpu count; 1 should disable multiprocessing
@@ -93,14 +96,23 @@ def runProject(name: str, output: str, args):
     ]
 
     if args.stage is not None:
-        foundStage = False
+        job_names = [job.getName() for job in jobs]
+        matched_index = next((i for i, jobName in enumerate(job_names) if jobName.lower() == args.stage.lower()), None)
 
-        for job in jobs:
-            jobName = job.getName()
-            foundStage = jobName == args.stage
-            if foundStage:
-                for snapshot in project.snapshots:
-                    snapshot.status = SnapshotStatus.PENDING
+        if matched_index is None:
+            print(f"Unknown stage '{args.stage}'. Valid stages are: {', '.join(job_names)}")
+            sys.exit(1)
+
+        # reset the matched stage and every stage after it, so they get recomputed
+        for job in jobs[matched_index:]:
+            job.init(project)
+
+        for snapshot in project.snapshots:
+            for job in jobs[matched_index:]:
+                job.reset(snapshot)
+                snapshot.jobs.pop(job.getName(), None)
+            snapshot.status = SnapshotStatus.PENDING
+            snapshot.error = ''
 
     compileProject(project, output, jobs, TerminalReporter())
 
