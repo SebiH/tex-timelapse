@@ -125,7 +125,7 @@ def compileSnapshot(project: Project, snapshot: Snapshot, actions: List[Action],
             result = SnapshotStatus.FAILED
             snapshot.error = str(e)
             reporter.log(f'Action "{action.getName()}" for snapshot {snapshot.commit_sha} failed with error: {e}')
-        
+
         if result == SnapshotStatus.FAILED:
             snapshot.status = SnapshotStatus.FAILED
             snapshot.jobs[action.getName()] = SnapshotStatus.FAILED
@@ -134,7 +134,7 @@ def compileSnapshot(project: Project, snapshot: Snapshot, actions: List[Action],
         reporter.update_progress(snapshot)
 
         action.cleanup()
-    
+
     if snapshot.status != SnapshotStatus.FAILED:
         snapshot.status = SnapshotStatus.COMPLETED
     # else:

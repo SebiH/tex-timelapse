@@ -13,7 +13,7 @@ from tex_timelapse.compiler import compileProject, compileSnapshot
 from tex_timelapse.project import Project
 from tex_timelapse.snapshot import Snapshot, SnapshotStatus
 
-from .actions import create_actions, get_stage_names
+from .actions import create_and_init_actions, get_stage_names
 
 class WebServer:
     def __init__(self):
@@ -62,7 +62,7 @@ class WebServer:
                 project = Project.deserialize(name)
                 project.loadSnapshots()
 
-                jobs = create_actions()
+                jobs = create_and_init_actions(project)
 
                 compileProject(project, 'test', jobs, WebReporter(self.socketio))
 
@@ -93,7 +93,7 @@ class WebServer:
                 project.loadSnapshots()
                 matching_snapshot = [s for s in project.snapshots if s.commit_sha == snapshot_sha]
 
-                jobs = create_actions()
+                jobs = create_and_init_actions(project)
 
                 if len(matching_snapshot) == 0:
                     return { 'success': False, 'error': 'Snapshot not found' }
@@ -119,7 +119,7 @@ class WebServer:
 
                 snapshot = matching_snapshot[0]
 
-                jobs = create_actions()
+                jobs = create_and_init_actions(project)
 
                 job_names = get_stage_names()
                 # an unknown/missing stage (e.g. the client passed `undefined`)
@@ -127,7 +127,6 @@ class WebServer:
                 start_index = job_names.index(stage) if stage in job_names else 0
 
                 for job in jobs[start_index:]:
-                    job.init(project)
                     job.reset(snapshot)
                     snapshot.jobs.pop(job.getName(), None)
 

@@ -8,7 +8,7 @@ from tex_timelapse.compiler import compileProject
 from tex_timelapse.project import Project
 from tex_timelapse.snapshot import SnapshotStatus
 from tex_timelapse.webserver import WebServer
-from tex_timelapse.actions import create_actions, get_stage_names
+from tex_timelapse.actions import create_and_init_actions, get_stage_names
 
 
 ############################
@@ -96,7 +96,7 @@ def runProject(name: str, output: str, args):
     project = Project.deserialize(name)
     project.loadSnapshots()
 
-    jobs = create_actions()
+    jobs = create_and_init_actions(project)
 
     if args.stage is not None:
         job_names = get_stage_names()
@@ -107,9 +107,6 @@ def runProject(name: str, output: str, args):
             sys.exit(1)
 
         # reset the matched stage and every stage after it, so they get recomputed
-        for job in jobs[matched_index:]:
-            job.init(project)
-
         for snapshot in project.snapshots:
             for job in jobs[matched_index:]:
                 job.reset(snapshot)
