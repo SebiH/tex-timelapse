@@ -40,7 +40,7 @@ export const TimelapseView = (props: TimelapseViewProps) => {
         </div>
 
         <div className='relative hidden flex-col items-start gap-8 md:flex project-view-slider'>
-            <Histogram snapshots={snapshots} mode='single' startSnapshot={startSnapshot} endSnapshot={endSnapshot} />
+            <Histogram snapshots={snapshots} />
         </div>
 
     </main>;
