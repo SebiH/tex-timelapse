@@ -39,3 +39,4 @@ class Config(TypedDict, total=False):
 
     # Video settings
     framerate: int
+    videoscale: float

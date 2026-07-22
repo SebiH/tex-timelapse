@@ -29,7 +29,7 @@ def cleanupFolder(project: Project, folder: str) -> None:
 
 def compileProject(project: Project, output: str, actions: List[Action], reporter: Reporter) -> None:
     snapshot_count = len(project.snapshots)
-    concat_commits = project.config.get('concatCommits', -1)
+    concat_commits = int(project.config.get('concatCommits', -1) or -1)
     if concat_commits > 0:
         snapshot_count = snapshot_count // concat_commits
 
@@ -37,6 +37,10 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
 
     # skip commits if concat commits is enabled, but start with the first commit
     skip_count = concat_commits
+
+    # retries are only meaningful when concatenation is enabled (concat_commits > 0):
+    # with 0/-1 ("no concatenation") every snapshot is submitted exactly once, no retries.
+    max_retries = concat_commits // 2 if concat_commits > 0 else 0
 
     try:
         pending_snapshots = []
@@ -50,7 +54,7 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
 
         retry_count = 0
 
-        while len(pending_snapshots) > 0 and (retry_count < concat_commits // 2 or concat_commits == -1):
+        while len(pending_snapshots) > 0:
             futures = []
             for snapshot in pending_snapshots:
                 future = executor.submit(compileSnapshot, project, snapshot, actions, reporter)
@@ -62,22 +66,23 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
             # Await results from compilation
             for future in concurrent.futures.as_completed(futures):
                 completed_snapshot = future.result()
-                
+
                 # retry compilation if we skipped commits from concatention anyway
-                if concat_commits > 0 and completed_snapshot.status == SnapshotStatus.FAILED:
+                if concat_commits > 0 and completed_snapshot.status == SnapshotStatus.FAILED and retry_count <= max_retries:
                     # progressively try previous snapshots if available - maybe we can find a working one
                     snapshot_index = next((i for i, snapshot in enumerate(project.snapshots) if snapshot.commit_sha == completed_snapshot.commit_sha), -1)
                     if snapshot_index > 0:
                         previous_snapshot = project.snapshots[snapshot_index - 1]
                         pending_snapshots.append(previous_snapshot)
-                        reporter.log(f'Retrying snapshot {completed_snapshot.commit_sha} ({retry_count}/{concat_commits // 2})')
+                        reporter.log(f'Retrying snapshot {completed_snapshot.commit_sha} ({retry_count}/{max_retries})')
 
         Snapshot.serialize(f'{project.projectFolder}/snapshots.yaml', project.snapshots)
 
     except Exception as e:
-        print(f"Error: {e}")
-
-    rmtree(f"{project.projectFolder}/workdir", ignore_errors=True)
+        reporter.log(f"Error: {e}")
+        raise
+    finally:
+        rmtree(f"{project.projectFolder}/workdir", ignore_errors=True)
 
     # render video
     reporter.set_stage("Rendering video", 100)
@@ -85,10 +90,11 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
 
     os.makedirs(f'{project.projectFolder}/output', exist_ok=True)
     framerate = project.config['framerate']
+    videoscale = float(project.config.get('videoscale', 0.25) or 0.25)
     cmd = f"""ffmpeg -y -framerate {framerate}
         -pattern_type glob -i {project.projectFolder}/frames/*.png
         -c:v libx264 -movflags +faststart
-        -vf format=yuv420p,scale=iw*0.25:ih*0.25,pad=ceil(iw/2)*2:ceil(ih/2)*2:0:0:white
+        -vf format=yuv420p,scale=iw*{videoscale}:ih*{videoscale},pad=ceil(iw/2)*2:ceil(ih/2)*2:0:0:white
         -strict -2 {project.projectFolder}/output/{output}.mp4
     """
 
