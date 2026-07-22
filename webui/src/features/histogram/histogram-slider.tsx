@@ -1,6 +1,5 @@
 import './histogram-slider.scss';
 import { TimelapseSnapshot } from '../../models/snapshot';
-import { useEffect } from 'react';
 import { Histogram } from './histogram';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
@@ -13,10 +12,9 @@ type Props = {
     mode: 'single' | 'range';
 };
 
-export const HistogramSlider = ({ snapshots, mode, startSnapshot, endSnapshot }: Props) => {
-    useEffect(() => {
-
-    }, [snapshots]);
+// `mode` and `endSnapshot` are accepted for the planned range-selection mode
+// but are not read yet; only single-snapshot selection is implemented.
+export const HistogramSlider = ({ snapshots, startSnapshot }: Props) => {
 
     const handleHistogramClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
         const boundingRect = event.currentTarget.getBoundingClientRect();

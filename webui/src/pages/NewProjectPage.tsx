@@ -133,7 +133,7 @@ export const NewProjectPage = () => {
                                     <FormField
                                         control={form.control}
                                         name="file"
-                                        render={({ field }) => (
+                                        render={() => (
                                             <FormItem>
                                                 <FormLabel>Project File</FormLabel>
                                                 <FormControl>

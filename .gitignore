@@ -12,3 +12,8 @@ __pycache__/
 # webui
 node_modules/
 dist/
+
+# bun is used locally as a stand-in while the Node toolchain is upgraded;
+# npm/package-lock.json remains the project standard.
+bun.lock
+bun.lockb
