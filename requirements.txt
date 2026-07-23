@@ -12,3 +12,4 @@ flask
 flask-socketio
 flask-cors
 pypdfium2
+pytest
