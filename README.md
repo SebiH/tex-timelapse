@@ -54,39 +54,97 @@ docker run -it --rm \
 ```
 
 ### python
-- Install OS dependencies:
-  - LaTeX
-  - texliveonfly - either via package manager (e.g., `apt install texlive-extra-utils`) or texlive manager (`tlmgr install texliveonfly`)
-  - latexmk
-  - git
-  - ffmpeg
-  - python3
+Install the OS dependencies:
 
-  PDF rasterisation needs no system package - it goes through the `pypdfium2`
-  wheel, which bundles PDFium. (`poppler-utils`/`pdftoppm` is no longer required.)
-- Install python dependencies: `pip install -r requirements.txt`
-- Run: `python tex-timelapse.py PATH/TO/MAIN.tex`
+  - a TeX distribution (TeX Live or MiKTeX)
+  - `latexmk`
+  - `texliveonfly` - either via package manager (e.g. `apt install texlive-extra-utils`) or via the TeX Live manager (`tlmgr install texliveonfly`)
+  - `git`
+  - `ffmpeg`
+  - `python3`
+
+PDF rasterisation needs no system package - it goes through the `pypdfium2`
+wheel, which bundles PDFium. (`poppler-utils`/`pdftoppm` is no longer required.)
+
+Then install the python dependencies and run a project:
+
+```bash
+pip install -r requirements.txt
+python tex-timelapse.py init myproject path/to/myproject.zip
+python tex-timelapse.py run myproject timelapse
+```
+
+Run from the repository root: `./projects` and `./default_config.yaml` are
+resolved relative to the current working directory.
 
 
-## Parameters
-  - `-h, --help`: show help message and exit
-  - `--output <OUTPUT: string>`: Output video filename (default: output.mp4).
-  - `--blur <BLUR: number>`: Amount of gaussian blur (default: 1).
-  - `--rows <ROWS: number>`: Number of rows in final video (default: 3).
-  - `--columns <COLUMNS: number>`: Number of columns in final video (default: 6).
-  - `--highlight-changes <HIGHLIGHTCHANGES: true|false>` Highlight changes based on git commits and synctex (default true).
-  - `--fade-effect <FADEEFFECT: true|false>`: Slowly fades out the changes from previous commits (requires --highlight-changes, default: false)
-  - `--use-multithreading`: Enables multithreading, significantly speeding up processing
-  - `--workers <WORKERS: number>`: Number of worker threads (requires multithreading).
-  - `--from` / `--to: <COMMIT_SHA>`: Only use defined start/end point for timelapse instead of full git history. (Useful for quickly testing out parameters)
-  - `--skip-to <SKIP: number>`: Skips to specified worksteps. Useful for quickly re-rendering (e.g. by skipping directly to rendering step).
-    - 1: Initialize repositories in `tmp/` folder
-    - 2: Compile PDF and write changes from git/synctex to file
-    - 3: Convert PDF pages to images
-    - 4: Assemble images into one big file; add change highlight
-    - 5: Render video
+## CLI
+
+```
+python tex-timelapse.py init <project> <source.zip>
+python tex-timelapse.py run <project> <output> [--stage <name>]
+python tex-timelapse.py list
+python tex-timelapse.py server [--host HOST] [--port PORT]
+```
+
+  - **`init`** creates `projects/<slugified-name>/` and unpacks `<source.zip>`
+    into it. Only `.zip` sources are supported, and the archive must contain
+    the project's `.git` directory - the git history *is* the timelapse.
+  - **`run`** compiles the project and writes `projects/<name>/output/<output>.mp4`.
+    `<output>` is a basename, not a path.
+  - **`--stage <name>`** resets the named pipeline stage and every stage after
+    it, then recomputes only those - useful for re-rendering without
+    recompiling. Accepts a stage name, case-insensitively: `Init Repository`,
+    `Replace Text`, `Compile LaTeX`, `PDF to Image`, `Assemble Image`.
+  - **`server`** starts the Flask + Socket.IO API. It binds to loopback only by
+    default; pass `--host 0.0.0.0` to accept connections from other machines
+    (required inside a container).
+
+Progress is resumable: per-commit state lives in `projects/<name>/snapshots.yaml`,
+so an interrupted run picks up where it stopped instead of recompiling
+everything. Delete that file (or use the web UI's reset) to start over.
+
+
+## Configuration
+
+Each project gets a `project.yaml`, copied from `default_config.yaml` at init
+time and editable afterwards either by hand or through the web UI. The keys:
+
+| Key | Default | Meaning |
+|---|---|---|
+| `rows`, `columns` | `3`, `6` | Grid the PDF pages are tiled into for each frame. Pages beyond `rows × columns` are dropped; a short document is padded with blank pages. |
+| `framerate` | `8` | Output video framerate. |
+| `videoscale` | `0.25` | Scale factor applied by ffmpeg to the assembled frames. |
+| `blur` | `1` | Gaussian blur radius applied to each page. The point is to make the text unreadable so the *shape* of the document reads as the subject. `0` disables it. |
+| `highlightChanges` | `true` | Highlight regions changed by each commit, located by mapping `git diff` line numbers to PDF coordinates via synctex. |
+| `startCommit`, `endCommit` | `''` | Restrict the timelapse to a commit range instead of the full history. |
+| `startDate`, `endDate` | empty | Same, by date. |
+| `crop*` | `false` / `0` | Per-page cropping, including alternating left/right offsets for two-page layouts. |
+| `latexCmd` | `latexmk -pdf -interaction=nonstopmode -synctex=1 -f` | The compile command. `latexmk` is the default because it handles reruns and the bibliography pass itself; a custom non-latexmk command gets a **single** pass only. |
+| `concatCommits` | `0` | Collapse N commits into one snapshot (one video frame). `0` means no concatenation - one frame per commit. |
+| `workers` | `-1` | Worker threads. `-1` uses the default pool size, `1` disables concurrency, `N` uses exactly N. |
+| `text_replacements` | `³`→`3`, `⁈`→`?!` | Literal substitutions applied to the sources before compiling; a workaround for characters that break the compiler. |
+| `overleafProjectId`, `overleafAuthToken` | `''` | Reserved for Overleaf import; not yet implemented. |
+
+A compile is judged successful by whether a PDF appeared, not by the compiler's
+exit code - LaTeX routinely exits non-zero on documents that render fine.
+
+
+## Web UI
+
+The web UI (`webui/`, Vite + React) is a separate front end over the same
+pipeline. Under Docker it is built and served for you (see above). For
+development, run the API and the Vite dev server side by side:
+
+```bash
+python tex-timelapse.py server      # :5000
+cd webui && npm install && npm run dev   # :5173, proxies /api and /socket.io
+```
+
+Node 18+ is required. The Flask server does **not** serve the built UI - in
+production that is nginx's job, as configured in `docker/nginx.conf`.
+
 
 ## Not supported (yet)
-- Tracking changes across multiple tex files (e.g., using `\input`)
 - Exporting history from Overleaf as individual git commits
 - Visualize datetime (e.g., timeslider, git tags)
