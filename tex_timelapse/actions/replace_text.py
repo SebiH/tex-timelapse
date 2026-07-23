@@ -19,9 +19,14 @@ class ReplaceTextAction(Action):
         work_dir = snapshot.getWorkDir()
 
         for file in snapshot.includes:
-            if os.path.exists(file) and (file.endswith('.tex') or file.endswith('.bib')):
+            # snapshot.includes holds workdir-relative paths (e.g. './main.tex').
+            # The existence check must resolve them against work_dir, not the
+            # process CWD - checking bare `file` looked at the repo root, was
+            # always False, and silently skipped every text replacement, so the
+            # config's text_replacements never actually applied.
+            file_path = f"{work_dir}/{file}"
+            if os.path.exists(file_path) and (file.endswith('.tex') or file.endswith('.bib')):
                 # replace text in the file
-                file_path = f"{work_dir}/{file}"
                 with open(file_path, 'r', encoding='utf-8') as f:
                     content = f.read()
                 for replacement in self.text_replacements:
