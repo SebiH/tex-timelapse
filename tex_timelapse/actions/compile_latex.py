@@ -71,12 +71,22 @@ class CompileLatexAction(Action):
         pdfFile = texFile[:-4] + '.pdf'
         pdfPath = f'{workDir}/{pdfFile}'
 
-        # Compile first. texliveonfly detects missing packages by running a
-        # full compile of its own, so calling it unconditionally before every
-        # compile (as this used to) meant every snapshot was compiled twice -
-        # roughly doubling the pipeline's dominant cost. Instead compile
-        # directly, and only fall back to texliveonfly when no PDF appeared,
-        # which is the case a missing package would produce.
+        # Compile first, and only fall back to texliveonfly when no PDF
+        # appears - the symptom of a missing package. This used to call
+        # texliveonfly unconditionally before every compile.
+        #
+        # The point is NOT raw speed on a full TeX install: there, running
+        # texliveonfly first is actually marginally faster, because its
+        # pdflatex pass primes the .aux so the following latexmk needs fewer
+        # passes (measured ~29.5s vs ~33s over the 9-commit sample). The point
+        # is the minimal-install path (the Docker scheme-small image, the
+        # common deployment): the old code paid texliveonfly's full
+        # package-detection compile - and its network probing - on every
+        # single snapshot, even long after the needed packages were installed.
+        # Compiling first means that cost is paid only by snapshots that
+        # actually fail for a missing package; once the package is installed
+        # (the TeX tree is shared across snapshots) later commits compile
+        # straight through.
         #
         # ignore errors in case it somehow still compiled
         output = snapshot.execute_cmd(compileCmd, ignore_error=True, posix=True)

@@ -118,6 +118,44 @@ def test_compile_project_reraises_on_snapshot_failure_instead_of_encoding(bare_p
     assert any('boom' in msg for msg in recording_reporter.logs)
 
 
+def test_compile_project_aborts_when_a_snapshot_returns_failed_status(bare_project, recording_reporter, monkeypatch):
+    # Distinct from the raise test above: a real compile failure does NOT
+    # raise out of compileSnapshot - it returns normally with status FAILED
+    # (the exception is caught and recorded inside compileSnapshot). This is
+    # the path that used to fall through to ffmpeg and encode a video with a
+    # missing frame.
+    def failing_status_compile_snapshot(project, snapshot, actions, reporter):
+        snapshot.status = SnapshotStatus.FAILED
+        snapshot.error = 'LaTeX Error: File `missing.sty` not found'
+        return snapshot
+
+    monkeypatch.setattr(compiler, 'compileSnapshot', failing_status_compile_snapshot)
+    monkeypatch.setattr(compiler, 'FfmpegProgress', FakeFfmpegProgress)
+
+    with pytest.raises(RuntimeError, match='failed to compile'):
+        compiler.compileProject(bare_project, 'out', actions=[], reporter=recording_reporter)
+
+    # never reached the encode step
+    assert FakeFfmpegProgress.instances == []
+
+
+def test_allow_partial_render_encodes_despite_a_failed_snapshot(bare_project, recording_reporter, monkeypatch):
+    bare_project.config.allowPartialRender = True
+
+    def one_failing_compile_snapshot(project, snapshot, actions, reporter):
+        # fail exactly one snapshot, complete the rest
+        snapshot.status = SnapshotStatus.FAILED if snapshot.commit_sha == 'sha2' else SnapshotStatus.COMPLETED
+        return snapshot
+
+    monkeypatch.setattr(compiler, 'compileSnapshot', one_failing_compile_snapshot)
+    monkeypatch.setattr(compiler, 'FfmpegProgress', FakeFfmpegProgress)
+
+    # must not raise; must proceed to encode
+    compiler.compileProject(bare_project, 'out', actions=[], reporter=recording_reporter)
+    assert len(FakeFfmpegProgress.instances) == 1
+    assert any('partial' in msg.lower() for msg in recording_reporter.logs)
+
+
 def test_compile_project_cleans_up_workdir_even_on_failure(bare_project, recording_reporter, monkeypatch):
     workdir = Path(bare_project.projectFolder) / 'workdir'
     workdir.mkdir(parents=True)

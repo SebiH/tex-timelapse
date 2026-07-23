@@ -93,6 +93,24 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
 
         Snapshot.serialize(f'{project.projectFolder}/snapshots.yaml', project.snapshots)
 
+        # A snapshot that failed to compile does NOT raise out of
+        # compileSnapshot - it returns normally with status == FAILED (its
+        # exception was caught and recorded there). So future.result() above
+        # never raises for a failed compile, and without this check the run
+        # would fall straight through to ffmpeg, which globs frames/*.png and
+        # would encode a video with the failed commit's frame missing -
+        # silently shifting the whole timelapse rather than erroring.
+        failed = [s for s in project.snapshots if s.status == SnapshotStatus.FAILED]
+        if failed and not project.config.allowPartialRender:
+            details = '; '.join(f'{s.commit_sha}: {s.error or "unknown error"}' for s in failed)
+            raise RuntimeError(
+                f'{len(failed)} snapshot(s) failed to compile, aborting before '
+                f'encoding (set allowPartialRender: true to render anyway). {details}'
+            )
+        if failed:
+            reporter.log(f'{len(failed)} snapshot(s) failed; rendering a partial '
+                         f'timelapse because allowPartialRender is set.')
+
     except Exception as e:
         reporter.log(f"Error: {e}")
         raise

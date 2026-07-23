@@ -109,6 +109,13 @@ class Config:
     # means no concatenation.
     concatCommits: int = 0
 
+    # When a snapshot fails to compile, abort the run before encoding rather
+    # than silently encoding a video with that commit's frame missing (ffmpeg
+    # globs frames/*.png, so a gap shifts the whole timelapse). Set True to
+    # deliberately render whatever frames succeeded - real LaTeX histories do
+    # contain commits that legitimately do not compile.
+    allowPartialRender: bool = False
+
     # TODO: maybe change to latexMode: pdflatex | luaLaTeX | xelatex...?
     latexCmd: str = 'latexmk -pdf -interaction=nonstopmode -synctex=1 -f'
 
@@ -172,6 +179,7 @@ _FIELD_COERCERS: Dict[str, Callable[[Any], Any]] = {
     'cropAltTop': coerce_int,
     'cropAltBottom': coerce_int,
     'concatCommits': coerce_int,
+    'allowPartialRender': coerce_bool,
     'text_replacements': coerce_text_replacements,
     'framerate': coerce_int,
     'videoscale': coerce_float,

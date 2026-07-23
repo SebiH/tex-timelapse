@@ -32,6 +32,12 @@ latexCmd: latexmk -pdf -interaction=nonstopmode -synctex=1 -f
 # How many commits to concatenate into one snapshot. 0 means no concatenation.
 concatCommits: 0
 
+# When a commit fails to compile, abort the run instead of encoding a video
+# with that frame missing (which would shift the whole timelapse). Set true to
+# render whatever frames succeeded - useful for histories that contain commits
+# that legitimately do not compile.
+allowPartialRender: false
+
 # Worker threads for compiling snapshots. -1 (or omitted) uses the default
 # thread pool size; 1 disables concurrency; N>1 uses exactly N workers.
 workers: -1
