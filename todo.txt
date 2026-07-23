@@ -9,14 +9,15 @@
     - [ ] page preview
         - [ ] cols/rows
         - [ ] blur
-        - [ ] crop
+        - [x] crop (per-edge insets, even/odd for two-page; overlays offset by crop)
     - [x] save button (save automatically?)
     - [x] render
     - Snapshot selection
         - [ ] linear/timeline view
         - [ ] Range
     - [ ] templates for image cropping
-    - [ ] flag for 'force completion' with hint that it may result in weird pages
+    - [x] flag for 'force completion' with hint that it may result in weird pages
+          (allowPartialRender config: encode whatever succeeded instead of aborting)
 - [ ] video view
 - [x] update README
 - Optimizations / features
