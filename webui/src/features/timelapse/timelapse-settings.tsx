@@ -81,6 +81,14 @@ export const TimelapseSettings = ({ project }: TimelapseSettingsProps) => {
         sendConfig(project, newConfig);
     };
 
+    // `e.target.valueAsNumber` is NaN when a numeric input is cleared; guard
+    // it here so a cleared field doesn't push NaN into the config (and from
+    // there into the debounced POST).
+    const updateNumberConfig = <K extends keyof TimelapseConfig>(key: K, value: number) => {
+        if (Number.isNaN(value)) return;
+        updateConfig(key, value as TimelapseConfig[K]);
+    };
+
     const setCompilerCmd = (mode: string) => {
         if (mode === 'pdflatex')
             updateConfig('latexCmd', pdflatexCmd);
@@ -128,7 +136,7 @@ export const TimelapseSettings = ({ project }: TimelapseSettingsProps) => {
 
                 <div className='grid gap-3'>
                     <Label>Compiler</Label>
-                    <Select value={compiler} onValueChange={setCompilerCmd.bind(this)}>
+                    <Select value={compiler} onValueChange={setCompilerCmd}>
                         <SelectTrigger id='compiler' className='items-start [&_[data-description]]:hidden'>
                             <SelectValue placeholder='Select a latex compiler' />
                         </SelectTrigger>
@@ -217,18 +225,18 @@ export const TimelapseSettings = ({ project }: TimelapseSettingsProps) => {
                 <div className='grid grid-cols-2 gap-4'>
                     <div className='grid gap-3'>
                         <Label>Rows</Label>
-                        <Input type='number' placeholder='3' value={config.rows} onChange={e => updateConfig('rows', e.target.valueAsNumber)} min={1} />
+                        <Input type='number' placeholder='3' value={config.rows} onChange={e => updateNumberConfig('rows', e.target.valueAsNumber)} min={1} />
                     </div>
                     <div className='grid gap-3'>
                         <Label>Columns</Label>
-                        <Input type='number' placeholder='4' value={config.columns} onChange={e => updateConfig('columns', e.target.valueAsNumber)} min={1} />
+                        <Input type='number' placeholder='4' value={config.columns} onChange={e => updateNumberConfig('columns', e.target.valueAsNumber)} min={1} />
                     </div>
                 </div>
 
                 <div className='grid grid-cols-2 gap-4'>
                     <div className='grid gap-3'>
                         <Label>Video Framerate</Label>
-                        <Input type='number' placeholder='4' value={config.framerate} onChange={e => updateConfig('framerate', e.target.valueAsNumber)} min={1} />
+                        <Input type='number' placeholder='4' value={config.framerate} onChange={e => updateNumberConfig('framerate', e.target.valueAsNumber)} min={1} />
                     </div>
                     <div className='grid gap-3'>
                         <Label>Estimated Duration</Label>
@@ -346,13 +354,13 @@ export const TimelapseSettings = ({ project }: TimelapseSettingsProps) => {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={resetProjectSnapshots.bind(this)}>Continue</AlertDialogAction>
+                        <AlertDialogAction onClick={resetProjectSnapshots}>Continue</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
 
 
-            <Button variant='default' className='w-full' onClick={compileProject.bind(this)}>
+            <Button variant='default' className='w-full' onClick={compileProject}>
                 <Play className='w-4 h-4 m-1' />
                 Start
             </Button>
