@@ -131,22 +131,20 @@ RUN tlmgr install latexmk biber cm-super texliveonfly
 # of which user runs the container (see non-root user below).
 RUN git config --system --add safe.directory '*'
 
-# --- Python dependencies -----------------------------------------------
-# Copied and installed before the application source so that editing
-# tex_timelapse/*.py doesn't bust this (comparatively expensive) layer.
+# --- Application: install the backend package --------------------------
+# The backend is a packaged project under backend/ (backend/pyproject.toml);
+# installing it pulls in the pinned runtime deps and puts the `tex-timelapse`
+# console script on PATH. default_config.yaml travels inside the package
+# (declared as package-data), so no separate copy is needed.
+#
+# Not split into a deps-cache-then-source layer: pip needs the package source
+# to resolve its own metadata, and on this image the TeX Live layer above
+# dwarfs the pip install anyway, so the extra caching machinery isn't worth
+# it. Non-editable install (production image): src edits mean a rebuild.
 # (WORKDIR /tex-timelapse was already set above, after the TeX Live install.)
-COPY requirements.txt .
+COPY backend/ ./backend/
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
-
-# --- Application source --------------------------------------------------
-COPY default_config.yaml .
-COPY tex-timelapse.py .
-# NOTE: trailing "./tex_timelapse/" (not ".") - preserves the package
-# directory so `import tex_timelapse` resolves. A bare `COPY tex_timelapse/ .`
-# would flatten its contents straight into /tex-timelapse/, breaking every
-# import.
-COPY tex_timelapse/ ./tex_timelapse/
+    && pip install --no-cache-dir ./backend
 
 # --- Non-root runtime user -----------------------------------------------
 # projects/ and uploads/ are where the app writes at runtime (see
@@ -177,5 +175,9 @@ RUN chown -R app:app /usr/local/texlive
 
 USER app
 
-ENTRYPOINT [ "python", "tex-timelapse.py" ]
+# The `tex-timelapse` console script (from backend/pyproject.toml's
+# [project.scripts]) runs with WORKDIR /tex-timelapse, so projects_root()'s
+# CWD-relative default resolves to /tex-timelapse/projects - matching the
+# compose volume mount. compose appends e.g. `server --host 0.0.0.0`.
+ENTRYPOINT [ "tex-timelapse" ]
 CMD [ "--help" ]
