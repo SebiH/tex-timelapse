@@ -9,19 +9,36 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
 from tex_timelapse.reporters.web_reporter import WebReporter
+from tex_timelapse.reporters.job_reporter import JobReporter
 from tex_timelapse.compiler import compileProject, compileSnapshot
+from tex_timelapse.jobs import JobManager, JobStatus
 from tex_timelapse.project import Project
 from tex_timelapse.snapshot import Snapshot, SnapshotStatus
 from tex_timelapse.config import Config
 
 from .actions import create_and_init_actions, get_stage_names
 
+# Browser origins allowed to call the API / open the Socket.IO connection.
+# Overridable via TEX_TIMELAPSE_CORS_ORIGINS (comma-separated) for other
+# deployments; defaults to the Vite dev server. The API used to allow '*',
+# which lets any web page a user visits drive their local server.
+_DEFAULT_CORS_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173']
+
+
+def _cors_origins() -> list[str]:
+    raw = os.environ.get('TEX_TIMELAPSE_CORS_ORIGINS', '')
+    origins = [o.strip() for o in raw.split(',') if o.strip()]
+    return origins or _DEFAULT_CORS_ORIGINS
+
+
 class WebServer:
     def __init__(self):
         self.app = Flask(__name__)
 
-        CORS(self.app, resources={r"/*": {"origins": "*"}})
-        self.socketio = SocketIO(self.app, cors_allowed_origins='*')
+        origins = _cors_origins()
+        CORS(self.app, resources={r"/*": {"origins": origins}})
+        self.socketio = SocketIO(self.app, cors_allowed_origins=origins)
+        self.jobs = JobManager()
 
         @self.app.route('/api/projects')
         def listProjects():
@@ -61,19 +78,57 @@ class WebServer:
                 return jsonify({ 'success': False, 'error': str(e) })
 
 
-        @self.app.route('/api/projects/<name>/run')
-        def __runProject(name):
+        @self.app.route('/api/projects/<name>/jobs', methods=['POST'])
+        def __startJob(name):
+            # Start a render on a background task and return immediately with a
+            # job id. Replaces the old GET /run, which blocked a request thread
+            # for the entire (minutes-long) compile+encode.
             try:
                 project = Project.deserialize(name)
                 project.loadSnapshots()
-
-                jobs = create_and_init_actions(project)
-
-                compileProject(project, 'test', jobs, WebReporter(self.socketio))
-
-                return { 'success': True }
             except Exception as e:
-                return { 'success': False, 'error': str(e) }
+                return { 'success': False, 'error': str(e) }, 404
+
+            body = request.get_json(silent=True) or {}
+            output = body.get('output', 'output')
+
+            try:
+                job = self.jobs.create(name, output)
+            except RuntimeError as e:
+                # a render is already running for this project
+                return { 'success': False, 'error': str(e) }, 409
+
+            actions = create_and_init_actions(project)
+            reporter = JobReporter(self.socketio, job)
+
+            def _run(job_id):
+                try:
+                    compileProject(project, output, actions, reporter,
+                                   should_cancel=lambda: job.cancel_requested)
+                    status = JobStatus.CANCELLED if job.cancel_requested else JobStatus.COMPLETED
+                    self.jobs.finish(job_id, status)
+                except Exception as e:
+                    reporter.log(f'Render failed: {e}')
+                    self.jobs.finish(job_id, JobStatus.FAILED, str(e))
+
+            self.socketio.start_background_task(_run, job.id)
+            return { 'success': True, 'job': job.to_dict() }, 202
+
+        @self.app.route('/api/jobs/<job_id>', methods=['GET'])
+        def __getJob(job_id):
+            job = self.jobs.get(job_id)
+            if job is None:
+                return { 'success': False, 'error': 'Job not found' }, 404
+            return { 'success': True, 'job': job.to_dict() }
+
+        @self.app.route('/api/jobs/<job_id>', methods=['DELETE'])
+        def __cancelJob(job_id):
+            job = self.jobs.get(job_id)
+            if job is None:
+                return { 'success': False, 'error': 'Job not found' }, 404
+            job.request_cancel()
+            # cooperative: the render stops before its next snapshot / encode.
+            return { 'success': True, 'job': job.to_dict() }, 202
 
         @self.app.route('/api/projects/<name>/reset')
         def __resetProject(name):

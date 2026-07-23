@@ -60,7 +60,7 @@ def bare_project(tmp_path) -> Project:
 def test_concat_commits_zero_submits_every_snapshot(bare_project, recording_reporter, monkeypatch):
     submitted = []
 
-    def fake_compile_snapshot(project, snapshot, actions, reporter):
+    def fake_compile_snapshot(project, snapshot, actions, reporter, should_cancel=None):
         submitted.append(snapshot.commit_sha)
         snapshot.status = SnapshotStatus.COMPLETED
         return snapshot
@@ -88,7 +88,7 @@ def test_concat_commits_negative_one_also_submits_every_snapshot(bare_project, r
     bare_project.config.concatCommits = -1
     submitted = []
 
-    def fake_compile_snapshot(project, snapshot, actions, reporter):
+    def fake_compile_snapshot(project, snapshot, actions, reporter, should_cancel=None):
         submitted.append(snapshot.commit_sha)
         snapshot.status = SnapshotStatus.COMPLETED
         return snapshot
@@ -102,7 +102,7 @@ def test_concat_commits_negative_one_also_submits_every_snapshot(bare_project, r
 
 
 def test_compile_project_reraises_on_snapshot_failure_instead_of_encoding(bare_project, recording_reporter, monkeypatch):
-    def failing_compile_snapshot(project, snapshot, actions, reporter):
+    def failing_compile_snapshot(project, snapshot, actions, reporter, should_cancel=None):
         raise RuntimeError('boom: pipeline stage exploded')
 
     monkeypatch.setattr(compiler, 'compileSnapshot', failing_compile_snapshot)
@@ -124,7 +124,7 @@ def test_compile_project_aborts_when_a_snapshot_returns_failed_status(bare_proje
     # (the exception is caught and recorded inside compileSnapshot). This is
     # the path that used to fall through to ffmpeg and encode a video with a
     # missing frame.
-    def failing_status_compile_snapshot(project, snapshot, actions, reporter):
+    def failing_status_compile_snapshot(project, snapshot, actions, reporter, should_cancel=None):
         snapshot.status = SnapshotStatus.FAILED
         snapshot.error = 'LaTeX Error: File `missing.sty` not found'
         return snapshot
@@ -142,7 +142,7 @@ def test_compile_project_aborts_when_a_snapshot_returns_failed_status(bare_proje
 def test_allow_partial_render_encodes_despite_a_failed_snapshot(bare_project, recording_reporter, monkeypatch):
     bare_project.config.allowPartialRender = True
 
-    def one_failing_compile_snapshot(project, snapshot, actions, reporter):
+    def one_failing_compile_snapshot(project, snapshot, actions, reporter, should_cancel=None):
         # fail exactly one snapshot, complete the rest
         snapshot.status = SnapshotStatus.FAILED if snapshot.commit_sha == 'sha2' else SnapshotStatus.COMPLETED
         return snapshot
@@ -156,12 +156,35 @@ def test_allow_partial_render_encodes_despite_a_failed_snapshot(bare_project, re
     assert any('partial' in msg.lower() for msg in recording_reporter.logs)
 
 
+def test_compile_project_skips_encoding_when_cancelled(bare_project, recording_reporter, monkeypatch):
+    # should_cancel returning True must stop the run before ffmpeg: no video
+    # is encoded, and the queued snapshots bail out rather than compiling.
+    compiled = []
+
+    def fake_compile_snapshot(project, snapshot, actions, reporter, should_cancel=None):
+        # the real compileSnapshot bails at the top when cancelled; emulate that
+        if should_cancel is not None and should_cancel():
+            return snapshot
+        compiled.append(snapshot.commit_sha)
+        snapshot.status = SnapshotStatus.COMPLETED
+        return snapshot
+
+    monkeypatch.setattr(compiler, 'compileSnapshot', fake_compile_snapshot)
+    monkeypatch.setattr(compiler, 'FfmpegProgress', FakeFfmpegProgress)
+
+    compiler.compileProject(bare_project, 'out', actions=[], reporter=recording_reporter,
+                            should_cancel=lambda: True)
+
+    assert compiled == []                       # nothing compiled
+    assert FakeFfmpegProgress.instances == []   # nothing encoded
+
+
 def test_compile_project_cleans_up_workdir_even_on_failure(bare_project, recording_reporter, monkeypatch):
     workdir = Path(bare_project.projectFolder) / 'workdir'
     workdir.mkdir(parents=True)
     (workdir / 'marker').write_text('leftover')
 
-    def failing_compile_snapshot(project, snapshot, actions, reporter):
+    def failing_compile_snapshot(project, snapshot, actions, reporter, should_cancel=None):
         raise RuntimeError('boom')
 
     monkeypatch.setattr(compiler, 'compileSnapshot', failing_compile_snapshot)

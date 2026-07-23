@@ -1,7 +1,7 @@
 import os
 import threading
 import concurrent.futures
-from typing import List
+from typing import Callable, List, Optional
 from ffmpeg_progress_yield import FfmpegProgress
 from shutil import rmtree, copytree
 
@@ -27,7 +27,8 @@ def initFolder(project: Project, id: int) -> str:
 def cleanupFolder(project: Project, folder: str) -> None:
     rmtree(f"{folder}/latex", ignore_errors=True)
 
-def compileProject(project: Project, output: str, actions: List[Action], reporter: Reporter) -> None:
+def compileProject(project: Project, output: str, actions: List[Action], reporter: Reporter,
+                   should_cancel: Optional[Callable[[], bool]] = None) -> None:
     """Run `actions` over every snapshot in `project` using the module-level
     thread pool, then encode the resulting frames with ffmpeg.
 
@@ -36,7 +37,14 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
     compileSnapshot() never call `Action.init()` themselves, since doing so
     from inside a worker thread is what used to make every action's init()
     a data race.
+
+    `should_cancel`, if given, is polled cooperatively: it is checked before
+    each snapshot's work starts (so already-queued snapshots bail out early)
+    and again before encoding, so a cancelled render neither keeps compiling
+    nor produces a video. Snapshots already in flight finish; cancellation is
+    cooperative, not preemptive.
     """
+    cancelled = lambda: should_cancel is not None and should_cancel()
     workers = project.config.workers
     if workers is not None and workers > 0:
         setThreads(workers)
@@ -72,7 +80,7 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
         while len(pending_snapshots) > 0:
             futures = []
             for snapshot in pending_snapshots:
-                future = executor.submit(compileSnapshot, project, snapshot, actions, reporter)
+                future = executor.submit(compileSnapshot, project, snapshot, actions, reporter, should_cancel)
                 futures.append(future)
 
             retry_count += 1
@@ -92,6 +100,14 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
                         reporter.log(f'Retrying snapshot {completed_snapshot.commit_sha} ({retry_count}/{max_retries})')
 
         Snapshot.serialize(f'{project.projectFolder}/snapshots.yaml', project.snapshots)
+
+        # Cancellation takes precedence over both the failed-snapshot abort
+        # and encoding: return before ffmpeg (the finally below still cleans
+        # the workdir). Progress made so far is already serialised above, so a
+        # later resume picks up the snapshots that did complete.
+        if cancelled():
+            reporter.log('Render cancelled; not encoding a video.')
+            return
 
         # A snapshot that failed to compile does NOT raise out of
         # compileSnapshot - it returns normally with status == FAILED (its
@@ -137,7 +153,8 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
 
 
 
-def compileSnapshot(project: Project, snapshot: Snapshot, actions: List[Action], reporter: Reporter) -> Snapshot:
+def compileSnapshot(project: Project, snapshot: Snapshot, actions: List[Action], reporter: Reporter,
+                    should_cancel: Optional[Callable[[], bool]] = None) -> Snapshot:
     """Run `actions` over a single snapshot. May be called from a worker
     thread (via compileProject's executor) or directly, e.g. by webserver.py
     for a single-snapshot recompile.
@@ -146,7 +163,15 @@ def compileSnapshot(project: Project, snapshot: Snapshot, actions: List[Action],
     This function never calls `Action.init()`, precisely because it can run
     concurrently across many worker threads that would otherwise all race
     to mutate the same shared Action instances.
+
+    If `should_cancel` returns True the snapshot is skipped before any work
+    starts, leaving its status untouched (PENDING) so it neither counts as a
+    failure nor gets encoded. Snapshots already past this point run to
+    completion - cancellation is checked between snapshots, not mid-compile.
     """
+    if should_cancel is not None and should_cancel():
+        return snapshot
+
     thread_id = threading.get_ident()
 
     workDir = initFolder(project, thread_id)

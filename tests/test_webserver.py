@@ -1,9 +1,12 @@
 """API tests for tex_timelapse.webserver, using Flask's test client - no real
-server process, no network. Covers the basic project routes plus the
-getImage path-traversal regression (see commit 50eedb0 "Sanitize
-user-controlled paths and fix snapshot API responses")."""
+server process, no network. Covers the basic project routes, the async job
+endpoints, plus the getImage path-traversal regression (see commit 50eedb0
+"Sanitize user-controlled paths and fix snapshot API responses")."""
 
+import pytest
 import yaml
+
+import tex_timelapse.webserver as webserver_mod
 
 VALID_SHA = 'a' * 40
 
@@ -79,6 +82,121 @@ def test_post_project_without_json_body_reports_failure(flask_client, isolated_c
     resp = flask_client.post('/api/projects/No%20Body%20Project')
     data = resp.get_json()
     assert data['success'] is False
+
+
+# ---------------------------------------------------------------------------
+# async job endpoints: POST /api/projects/<name>/jobs, GET/DELETE /api/jobs/<id>
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def job_server(isolated_cwd):
+    """A WebServer + test client. start_background_task is NOT auto-run here;
+    each test decides whether the render body executes, so it can observe a
+    job while it is still RUNNING."""
+    from tex_timelapse.webserver import WebServer
+
+    server = WebServer()
+    server.app.testing = True
+    with server.app.test_client() as client:
+        yield server, client
+
+
+def test_start_job_returns_202_with_job_id(job_server, project_factory, monkeypatch):
+    server, client = job_server
+    project_factory(name='Job Project')
+    # run the background task synchronously so the job completes deterministically
+    monkeypatch.setattr(server.socketio, 'start_background_task',
+                        lambda fn, *a, **k: fn(*a, **k))
+    # no-op render: we're testing the endpoint wiring, not the pipeline
+    monkeypatch.setattr(webserver_mod, 'compileProject', lambda *a, **k: None)
+
+    resp = client.post('/api/projects/Job%20Project/jobs', json={'output': 'vid'})
+    assert resp.status_code == 202
+    data = resp.get_json()
+    assert data['success'] is True
+    assert data['job']['output'] == 'vid'
+    # NB: because start_background_task is patched to run synchronously here,
+    # the render already finished before the response was built, so the
+    # POST-time status is not asserted (it would be 'running' only under real
+    # async execution). Poll instead.
+    poll = client.get(f"/api/jobs/{data['job']['id']}")
+    assert poll.status_code == 200
+    assert poll.get_json()['job']['status'] == 'completed'
+
+
+def test_start_job_unknown_project_returns_404(job_server):
+    _server, client = job_server
+    resp = client.post('/api/projects/nope/jobs', json={})
+    assert resp.status_code == 404
+    assert resp.get_json()['success'] is False
+
+
+def test_second_concurrent_job_for_same_project_returns_409(job_server, project_factory, monkeypatch):
+    server, client = job_server
+    project_factory(name='Busy Project')
+    # never actually run the render, so the first job stays RUNNING
+    monkeypatch.setattr(server.socketio, 'start_background_task', lambda fn, *a, **k: None)
+    monkeypatch.setattr(webserver_mod, 'compileProject', lambda *a, **k: None)
+
+    first = client.post('/api/projects/Busy%20Project/jobs', json={})
+    assert first.status_code == 202
+
+    second = client.post('/api/projects/Busy%20Project/jobs', json={})
+    assert second.status_code == 409
+    assert second.get_json()['success'] is False
+
+
+def test_get_unknown_job_returns_404(job_server):
+    _server, client = job_server
+    resp = client.get('/api/jobs/does-not-exist')
+    assert resp.status_code == 404
+
+
+def test_delete_job_requests_cancel(job_server, project_factory, monkeypatch):
+    server, client = job_server
+    project_factory(name='Cancel Project')
+    monkeypatch.setattr(server.socketio, 'start_background_task', lambda fn, *a, **k: None)
+    monkeypatch.setattr(webserver_mod, 'compileProject', lambda *a, **k: None)
+
+    started = client.post('/api/projects/Cancel%20Project/jobs', json={})
+    job_id = started.get_json()['job']['id']
+
+    resp = client.delete(f'/api/jobs/{job_id}')
+    assert resp.status_code == 202
+    # the cooperative cancel flag is now set on the live job
+    assert server.jobs.get(job_id).cancel_requested is True
+
+
+def test_delete_unknown_job_returns_404(job_server):
+    _server, client = job_server
+    resp = client.delete('/api/jobs/does-not-exist')
+    assert resp.status_code == 404
+
+
+def test_job_ends_cancelled_when_render_was_cancelled(job_server, project_factory, monkeypatch):
+    # a render whose cancel flag was set before it finished must end CANCELLED,
+    # not COMPLETED.
+    server, client = job_server
+    project_factory(name='CancelEnd Project')
+
+    def fake_compile(project, output, actions, reporter, should_cancel=None):
+        # emulate a cooperative stop: the job was cancelled mid-flight
+        assert should_cancel is not None
+
+    monkeypatch.setattr(webserver_mod, 'compileProject', fake_compile)
+
+    # start_background_task: set the cancel flag, then run the render body -
+    # mimicking a DELETE that landed while the render was in progress.
+    def _cancel_then_run(fn, *a, **k):
+        job = list(server.jobs._jobs.values())[-1]
+        job.request_cancel()
+        fn(*a, **k)
+
+    monkeypatch.setattr(server.socketio, 'start_background_task', _cancel_then_run)
+
+    started = client.post('/api/projects/CancelEnd%20Project/jobs', json={})
+    job_id = started.get_json()['job']['id']
+    assert client.get(f'/api/jobs/{job_id}').get_json()['job']['status'] == 'cancelled'
 
 
 # ---------------------------------------------------------------------------
