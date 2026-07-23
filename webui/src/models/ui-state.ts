@@ -1,12 +1,19 @@
 import { TimelapseProject } from './project';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { TimelapseSnapshot } from './snapshot';
+import { TimelapseJob } from './job';
 import { io } from 'socket.io-client';
 import { api } from '@/api/client';
 
 export const UIState = {
     project: new BehaviorSubject<TimelapseProject | null>(null),
     currentSnapshot: new BehaviorSubject<TimelapseSnapshot | null>(null),
+    // The in-flight (or most recently seen) render job, if any. Populated by
+    // `startRender` and kept current by the `stage`/`set_progress` socket
+    // handlers below. There's no socket event for "job done" - the backend
+    // only pushes stage/progress - so nothing here clears it automatically;
+    // callers that care (e.g. after cancelling) clear or replace it explicitly.
+    activeJob: new BehaviorSubject<TimelapseJob | null>(null),
 
     setProject(project: TimelapseProject) {
         if (project !== this.project.value) {
@@ -88,6 +95,31 @@ export const UIState = {
             console.error(e);
             return false;
         }
+    },
+
+    async startRender(project: TimelapseProject, output: string): Promise<TimelapseJob | null> {
+        try {
+            const job = await api.startRender(project.name, output);
+            this.activeJob.next(job);
+            return job;
+        } catch (e) {
+            console.error(e);
+            return null;
+        }
+    },
+
+    async cancelRender(): Promise<boolean> {
+        const job = this.activeJob.value;
+        if (!job) return false;
+
+        try {
+            const cancelled = await api.cancelRender(job.id);
+            this.activeJob.next(cancelled);
+            return true;
+        } catch (e) {
+            console.error(e);
+            return false;
+        }
     }
 };
 
@@ -95,9 +127,26 @@ const socket = io();
 const snapshotUpdates = new Subject<TimelapseSnapshot>();
 export const snapshotUpdates$ = snapshotUpdates.asObservable();
 
-socket.on('stage', ({ stage, length }: { stage: string, length: number }) => {
-    // TODO
-    console.log('stage', stage, length);
+socket.on('stage', ({ job, stage, length }: { job: string, stage: string, length: number }) => {
+    const current = UIState.activeJob.value;
+    if (current !== null && current.id !== job) return;
+
+    // No activeJob yet (e.g. a render started elsewhere, or a page reload
+    // mid-render) but a stage event for it just arrived - fill in what we
+    // know, borrowing the project name from the currently loaded project
+    // since the event itself doesn't carry one.
+    const base: TimelapseJob = current || {
+        id: job,
+        project: UIState.project.value?.name || '',
+        output: '',
+        status: 'running',
+        stage: '',
+        stage_length: 0,
+        stage_progress: 0,
+        error: '',
+    };
+
+    UIState.activeJob.next({ ...base, stage, stage_length: length, stage_progress: 0 });
 });
 
 socket.on('add_progress', ({ snapshot }: { snapshot: TimelapseSnapshot }) => {
@@ -119,13 +168,15 @@ socket.on('add_progress', ({ snapshot }: { snapshot: TimelapseSnapshot }) => {
     }
 });
 
-socket.on('set_progress', ({ set }: { set: number }) => {
-    // TODO
-    console.log('set_progress', set);
+socket.on('set_progress', ({ job, set }: { job: string, set: number }) => {
+    const current = UIState.activeJob.value;
+    if (current !== null && current.id === job) {
+        UIState.activeJob.next({ ...current, stage_progress: set });
+    }
 });
 
-socket.on('log', ({ msg, snapshot }: { msg: string, snapshot?: string }) => {
+socket.on('log', ({ job, msg, snapshot_sha }: { job: string, msg: string, snapshot_sha?: string | null }) => {
     // TODO
-    console.log('log', msg, snapshot);
+    console.log('log', job, msg, snapshot_sha);
 });
 

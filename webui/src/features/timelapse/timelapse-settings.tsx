@@ -23,11 +23,13 @@ import { useEffect, useState } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { UIState } from '@/models/ui-state';
 import { TimelapseProject } from '@/models/project';
 import { TimelapseConfig } from '@/models/config';
+import { TimelapseJob } from '@/models/job';
 import { Button } from '@/components/ui/button';
-import { Play, Trash } from 'lucide-react';
+import { Play, Square, Trash } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/api/client';
 
@@ -57,6 +59,7 @@ const sendConfig = debounce((project: TimelapseProject, config: TimelapseConfig)
 export const TimelapseSettings = ({ project }: TimelapseSettingsProps) => {
     const [ config, setConfig ] = useState(project.config);
     const [ compiler, setCompiler ] = useState('pdflatex');
+    const [ activeJob, setActiveJob ] = useState<TimelapseJob | null>(null);
 
     useEffect(() => {
         const sub = UIState.project.subscribe(p => {
@@ -73,7 +76,14 @@ export const TimelapseSettings = ({ project }: TimelapseSettingsProps) => {
             }
         });
         return () => sub.unsubscribe();
-    }, []);        
+    }, []);
+
+    useEffect(() => {
+        const sub = UIState.activeJob.subscribe(setActiveJob);
+        return () => sub.unsubscribe();
+    }, []);
+
+    const isRendering = activeJob?.status === 'running';
 
     const updateConfig = <K extends keyof TimelapseConfig>(key: K, value: TimelapseConfig[K]) => {
         const newConfig = { ...config, [key]: value };
@@ -102,15 +112,28 @@ export const TimelapseSettings = ({ project }: TimelapseSettingsProps) => {
     };
 
     const compileProject = async () => {
-        try {
-            await api.runProject(project.name);
-            toast.success('Video created', {
-                description: 'Project rendered successfully',
+        // The project name doubles as the output mp4 basename - the backend
+        // slugifies/derives the file from it, so there's nothing else on
+        // this form that would make a better default.
+        const job = await UIState.startRender(project, project.name);
+        if (job) {
+            toast.success('Render started', {
+                description: 'Project is being rendered',
             });
-        } catch (e) {
-            console.error(e);
+        } else {
             toast.error('Rendering error', {
                 description: 'Project could not be rendered',
+            });
+        }
+    };
+
+    const cancelRender = async () => {
+        const ok = await UIState.cancelRender();
+        if (ok) {
+            toast.success('Render cancelled');
+        } else {
+            toast.error('Error', {
+                description: 'Render could not be cancelled',
             });
         }
     };
@@ -359,11 +382,23 @@ export const TimelapseSettings = ({ project }: TimelapseSettingsProps) => {
                 </AlertDialogContent>
             </AlertDialog>
 
+            {isRendering && activeJob && <div className='grid gap-2'>
+                <div className='flex items-center justify-between text-xs text-muted-foreground'>
+                    <span>{activeJob.stage || 'Starting...'}</span>
+                    <span>{Math.round(activeJob.stage_progress * 100)}%</span>
+                </div>
+                <Progress value={activeJob.stage_progress * 100} />
+            </div>}
 
-            <Button variant='default' className='w-full' onClick={compileProject}>
-                <Play className='w-4 h-4 m-1' />
-                Start
-            </Button>
+            {isRendering
+                ? <Button variant='destructive' className='w-full' onClick={cancelRender}>
+                    <Square className='w-4 h-4 m-1' />
+                    Cancel
+                </Button>
+                : <Button variant='default' className='w-full' onClick={compileProject}>
+                    <Play className='w-4 h-4 m-1' />
+                    Start
+                </Button>}
         </div>
     </div>;
 };
