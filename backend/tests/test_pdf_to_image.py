@@ -1,4 +1,4 @@
-"""Regression tests for tex_timelapse.actions.pdf_to_image: snapshot.pages
+"""Regression tests for tex_timelapse.core.actions.pdf_to_image: snapshot.pages
 must contain bare basenames only, never absolute/workdir-rooted paths (see
 commit d3d252d - the old `glob(f'{snapshot_img_dir}/*.jpg')` stored full
 paths into the workdir, which compiler.py then deletes after every run,
@@ -16,9 +16,9 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-import tex_timelapse.actions.pdf_to_image as pdf_to_image_module
-from tex_timelapse.actions.pdf_to_image import PdfToImageAction
-from tex_timelapse.snapshot import Snapshot, SnapshotStatus
+import tex_timelapse.core.actions.pdf_to_image as pdf_to_image_module
+from tex_timelapse.core.actions.pdf_to_image import PdfToImageAction
+from tex_timelapse.core.snapshot import Snapshot, SnapshotStatus
 
 
 class FakeBitmap:

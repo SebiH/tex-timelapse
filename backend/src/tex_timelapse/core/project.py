@@ -7,8 +7,8 @@ from typing import Any, Dict, List, Optional
 import git
 from slugify import slugify
 
-from tex_timelapse.config import Config
-from tex_timelapse.snapshot import Snapshot
+from tex_timelapse.core.config import Config
+from tex_timelapse.core.snapshot import Snapshot
 import yaml
 
 @dataclass

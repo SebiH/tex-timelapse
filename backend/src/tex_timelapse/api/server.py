@@ -10,13 +10,13 @@ from werkzeug.utils import secure_filename
 
 from tex_timelapse.reporters.web_reporter import WebReporter
 from tex_timelapse.reporters.job_reporter import JobReporter
-from tex_timelapse.compiler import compileProject, compileSnapshot
-from tex_timelapse.jobs import JobManager, JobStatus
-from tex_timelapse.project import Project
-from tex_timelapse.snapshot import Snapshot, SnapshotStatus
-from tex_timelapse.config import Config
+from tex_timelapse.core.compiler import compileProject, compileSnapshot
+from tex_timelapse.api.jobs import JobManager, JobStatus
+from tex_timelapse.core.project import Project
+from tex_timelapse.core.snapshot import Snapshot, SnapshotStatus
+from tex_timelapse.core.config import Config
 
-from .actions import create_and_init_actions, get_stage_names
+from tex_timelapse.core.actions import create_and_init_actions, get_stage_names
 
 # Browser origins allowed to call the API / open the Socket.IO connection.
 # Overridable via TEX_TIMELAPSE_CORS_ORIGINS (comma-separated) for other

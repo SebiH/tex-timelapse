@@ -1,4 +1,4 @@
-"""Regression tests for tex_timelapse.project.Project.list() (see commit
+"""Regression tests for tex_timelapse.core.project.Project.list() (see commit
 d3d252d): the old implementation derived a project's name from
 `file.split('/')[1]` on the glob result, which (a) breaks on Windows path
 separators and (b) returns the folder *slug*, not the project's actual
@@ -9,7 +9,7 @@ from pathlib import Path
 
 import yaml
 
-from tex_timelapse.project import Project
+from tex_timelapse.core.project import Project
 
 
 def _write_project_yaml(projects_dir: Path, slug: str, name: str) -> None:

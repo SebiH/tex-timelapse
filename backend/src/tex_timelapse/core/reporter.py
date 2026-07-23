@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from tex_timelapse.snapshot import Snapshot
+from tex_timelapse.core.snapshot import Snapshot
 
 class Reporter(ABC):
     @abstractmethod

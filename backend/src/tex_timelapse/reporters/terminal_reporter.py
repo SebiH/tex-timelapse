@@ -1,7 +1,7 @@
 from typing import Optional
 from alive_progress import alive_bar # type: ignore
-from tex_timelapse.reporter import Reporter
-from tex_timelapse.snapshot import Snapshot
+from tex_timelapse.core.reporter import Reporter
+from tex_timelapse.core.snapshot import Snapshot
 
 class TerminalReporter(Reporter):
     def __init__(self):

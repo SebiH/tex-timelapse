@@ -4,11 +4,11 @@ import argparse
 import sys
 
 from tex_timelapse.reporters.terminal_reporter import TerminalReporter
-from tex_timelapse.compiler import compileProject
-from tex_timelapse.project import Project
-from tex_timelapse.snapshot import SnapshotStatus
-from tex_timelapse.webserver import WebServer
-from tex_timelapse.actions import create_and_init_actions, get_stage_names
+from tex_timelapse.core.compiler import compileProject
+from tex_timelapse.core.project import Project
+from tex_timelapse.core.snapshot import SnapshotStatus
+from tex_timelapse.api.server import WebServer
+from tex_timelapse.core.actions import create_and_init_actions, get_stage_names
 
 
 ############################

@@ -1,13 +1,13 @@
 import os
 from typing import List, Tuple
-from tex_timelapse.actions.action import Action
-from tex_timelapse.config import Config
-from tex_timelapse.project import Project
-from tex_timelapse.snapshot import Snapshot, SnapshotStatus
+from tex_timelapse.core.actions.action import Action
+from tex_timelapse.core.config import Config
+from tex_timelapse.core.project import Project
+from tex_timelapse.core.snapshot import Snapshot, SnapshotStatus
 from PIL import Image, ImageFilter, ImageDraw
 import numpy as np
 import pypdfium2 as pdfium  # type: ignore[import-untyped]  # no py.typed marker/stubs published
-from tex_timelapse.pdfium_lock import PDFIUM_LOCK
+from tex_timelapse.core.pdfium_lock import PDFIUM_LOCK
 
 # see https://stackoverflow.com/a/46877433/4090817
 def pil_grid(images, max_horiz=np.iinfo(int).max):

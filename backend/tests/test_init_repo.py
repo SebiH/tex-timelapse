@@ -1,10 +1,10 @@
-"""Tests for tex_timelapse.actions.init_repo: main-.tex discovery, the
+"""Tests for tex_timelapse.core.actions.init_repo: main-.tex discovery, the
 \\include/\\input/\\addbibresource/\\includegraphics resolution walk, the
 wholename matching helper, and (as a regression) the direction of the
 `git diff` command InitRepoAction.run shells out to."""
 
-from tex_timelapse.actions.init_repo import InitRepoAction
-from tex_timelapse.snapshot import Snapshot, SnapshotStatus
+from tex_timelapse.core.actions.init_repo import InitRepoAction
+from tex_timelapse.core.snapshot import Snapshot, SnapshotStatus
 
 
 def test_find_main_tex_file(plain_workdir, make_snapshot):

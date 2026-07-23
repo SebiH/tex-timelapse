@@ -1,8 +1,8 @@
-"""Architecture guard: the core pipeline (compiler.py, project.py,
-snapshot.py, config.py, actions/**, reporter.py) must never import
-flask/flask_socketio. This guards a planned core/ vs api/ split - webserver.py
-and the reporters/ implementations are the only places allowed to know about
-Flask.
+"""Architecture guard: the core pipeline (core/compiler.py, core/project.py,
+core/snapshot.py, core/config.py, core/pdfium_lock.py, core/actions/**,
+core/reporter.py) must never import flask/flask_socketio. This guards the
+core/ vs api/ split - api/server.py and the reporters/{web,job}_reporter.py
+implementations are the only places allowed to know about Flask.
 
 Implemented via AST parsing rather than importing the modules, so this test
 can't accidentally trigger Flask import side effects and stays honest even
@@ -15,17 +15,18 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-PKG_ROOT = REPO_ROOT / 'tex_timelapse'
+PKG_ROOT = REPO_ROOT / 'src' / 'tex_timelapse'
 
 FORBIDDEN_MODULES = {'flask', 'flask_socketio'}
 
 CORE_MODULE_PATHS = [
-    PKG_ROOT / 'compiler.py',
-    PKG_ROOT / 'project.py',
-    PKG_ROOT / 'snapshot.py',
-    PKG_ROOT / 'config.py',
-    PKG_ROOT / 'reporter.py',
-    *sorted((PKG_ROOT / 'actions').glob('*.py')),
+    PKG_ROOT / 'core' / 'compiler.py',
+    PKG_ROOT / 'core' / 'project.py',
+    PKG_ROOT / 'core' / 'snapshot.py',
+    PKG_ROOT / 'core' / 'config.py',
+    PKG_ROOT / 'core' / 'pdfium_lock.py',
+    PKG_ROOT / 'core' / 'reporter.py',
+    *sorted((PKG_ROOT / 'core' / 'actions').glob('*.py')),
 ]
 
 
@@ -62,8 +63,8 @@ def test_core_pipeline_module_does_not_import_flask(module_path):
     )
 
 
-def test_webserver_is_the_one_place_allowed_to_import_flask():
+def test_api_server_is_the_one_place_allowed_to_import_flask():
     # sanity check that the test above is actually discriminating: the API
     # layer module it's *not* checking does import flask.
-    imported = _top_level_imported_modules(PKG_ROOT / 'webserver.py')
+    imported = _top_level_imported_modules(PKG_ROOT / 'api' / 'server.py')
     assert 'flask' in imported

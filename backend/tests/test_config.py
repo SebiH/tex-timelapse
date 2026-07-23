@@ -1,8 +1,8 @@
-"""Tests for tex_timelapse.config: the Config dataclass coercion rules."""
+"""Tests for tex_timelapse.core.config: the Config dataclass coercion rules."""
 
 import pytest
 
-from tex_timelapse.config import (
+from tex_timelapse.core.config import (
     Config,
     coerce_bool,
     coerce_float,

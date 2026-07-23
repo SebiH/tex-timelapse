@@ -1,4 +1,4 @@
-"""Regression tests for tex_timelapse.compiler, guarding two previously-fixed
+"""Regression tests for tex_timelapse.core.compiler, guarding two previously-fixed
 defects (see commit ec8f827 "Fix pipeline submitting zero snapshots with
 default config"):
 
@@ -19,10 +19,10 @@ from pathlib import Path
 
 import pytest
 
-import tex_timelapse.compiler as compiler
-from tex_timelapse.config import Config
-from tex_timelapse.project import Project
-from tex_timelapse.snapshot import Snapshot, SnapshotStatus
+import tex_timelapse.core.compiler as compiler
+from tex_timelapse.core.config import Config
+from tex_timelapse.core.project import Project
+from tex_timelapse.core.snapshot import Snapshot, SnapshotStatus
 
 
 class FakeFfmpegProgress:

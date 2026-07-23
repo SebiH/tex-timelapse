@@ -2,9 +2,9 @@ from typing import Optional
 
 from flask_socketio import SocketIO  # type: ignore
 
-from tex_timelapse.jobs import Job
-from tex_timelapse.reporter import Reporter
-from tex_timelapse.snapshot import Snapshot
+from tex_timelapse.api.jobs import Job
+from tex_timelapse.core.reporter import Reporter
+from tex_timelapse.core.snapshot import Snapshot
 
 
 class JobReporter(Reporter):

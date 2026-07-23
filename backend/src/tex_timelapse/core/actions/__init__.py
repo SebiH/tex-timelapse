@@ -9,13 +9,13 @@ nowhere else.
 
 from typing import List, Type
 
-from tex_timelapse.actions.action import Action
-from tex_timelapse.actions.init_repo import InitRepoAction
-from tex_timelapse.actions.replace_text import ReplaceTextAction
-from tex_timelapse.actions.compile_latex import CompileLatexAction
-from tex_timelapse.actions.pdf_to_image import PdfToImageAction
-from tex_timelapse.actions.assemble_image import AssembleImageAction
-from tex_timelapse.project import Project
+from tex_timelapse.core.actions.action import Action
+from tex_timelapse.core.actions.init_repo import InitRepoAction
+from tex_timelapse.core.actions.replace_text import ReplaceTextAction
+from tex_timelapse.core.actions.compile_latex import CompileLatexAction
+from tex_timelapse.core.actions.pdf_to_image import PdfToImageAction
+from tex_timelapse.core.actions.assemble_image import AssembleImageAction
+from tex_timelapse.core.project import Project
 
 ACTION_CLASSES: List[Type[Action]] = [
     InitRepoAction,

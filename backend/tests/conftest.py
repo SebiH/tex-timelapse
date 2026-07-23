@@ -16,10 +16,10 @@ import pytest
 import yaml
 from slugify import slugify
 
-from tex_timelapse.config import Config
-from tex_timelapse.project import Project
-from tex_timelapse.reporter import Reporter
-from tex_timelapse.snapshot import Snapshot
+from tex_timelapse.core.config import Config
+from tex_timelapse.core.project import Project
+from tex_timelapse.core.reporter import Reporter
+from tex_timelapse.core.snapshot import Snapshot
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG_PATH = REPO_ROOT / 'default_config.yaml'
@@ -244,7 +244,7 @@ def flask_client(isolated_cwd):
     """A Flask test client for WebServer's app, constructed after chdir'ing
     into an isolated tmp dir (WebServer.__init__ creates an `uploads/`
     directory relative to CWD as a side effect)."""
-    from tex_timelapse.webserver import WebServer
+    from tex_timelapse.api.server import WebServer
 
     server = WebServer()
     server.app.testing = True

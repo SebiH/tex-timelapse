@@ -1,4 +1,4 @@
-"""Tests for tex_timelapse.actions.assemble_image's pure geometry helpers:
+"""Tests for tex_timelapse.core.actions.assemble_image's pure geometry helpers:
 pil_grid, pad_or_trim_images, convert_synctex_to_image_coords, and
 crop_box_for_page."""
 
@@ -6,13 +6,13 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from tex_timelapse.actions.assemble_image import (
+from tex_timelapse.core.actions.assemble_image import (
     AssembleImageAction,
     crop_box_for_page,
     pad_or_trim_images,
     pil_grid,
 )
-from tex_timelapse.config import Config
+from tex_timelapse.core.config import Config
 
 
 def _solid(size, color=(255, 0, 0)):

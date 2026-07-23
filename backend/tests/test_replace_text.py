@@ -1,4 +1,4 @@
-"""Tests for tex_timelapse.actions.replace_text.
+"""Tests for tex_timelapse.core.actions.replace_text.
 
 Regression coverage for the directory-guard bug: the text-replacement loop
 guarded on os.path.exists(file), resolving the workdir-relative path against
@@ -6,8 +6,8 @@ the process CWD instead of work_dir, so it was always False and the config's
 text_replacements never applied.
 """
 
-from tex_timelapse.actions.replace_text import ReplaceTextAction
-from tex_timelapse.snapshot import Snapshot, SnapshotStatus
+from tex_timelapse.core.actions.replace_text import ReplaceTextAction
+from tex_timelapse.core.snapshot import Snapshot, SnapshotStatus
 
 
 class FakeProject:

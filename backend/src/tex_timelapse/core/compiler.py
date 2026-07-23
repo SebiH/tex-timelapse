@@ -5,10 +5,10 @@ from typing import Callable, List, Optional
 from ffmpeg_progress_yield import FfmpegProgress
 from shutil import rmtree, copytree
 
-from tex_timelapse.project import Project
-from tex_timelapse.reporter import Reporter
-from tex_timelapse.snapshot import Snapshot, SnapshotStatus
-from tex_timelapse.actions.action import Action
+from tex_timelapse.core.project import Project
+from tex_timelapse.core.reporter import Reporter
+from tex_timelapse.core.snapshot import Snapshot, SnapshotStatus
+from tex_timelapse.core.actions.action import Action
 
 executor = concurrent.futures.ThreadPoolExecutor()
 
@@ -33,7 +33,7 @@ def compileProject(project: Project, output: str, actions: List[Action], reporte
     thread pool, then encode the resulting frames with ffmpeg.
 
     `actions` must already be initialised (see
-    `tex_timelapse.actions.create_and_init_actions`) - this function and
+    `tex_timelapse.core.actions.create_and_init_actions`) - this function and
     compileSnapshot() never call `Action.init()` themselves, since doing so
     from inside a worker thread is what used to make every action's init()
     a data race.

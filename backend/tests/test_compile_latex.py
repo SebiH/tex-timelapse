@@ -1,4 +1,4 @@
-"""Tests for tex_timelapse.actions.compile_latex: git-diff hunk parsing, and
+"""Tests for tex_timelapse.core.actions.compile_latex: git-diff hunk parsing, and
 CompileLatexAction.run's mapping from changed lines to synctex page
 coordinates (with Snapshot.execute_cmd faked - no real LaTeX/synctex
 involved)."""
@@ -7,12 +7,12 @@ from typing import List
 
 import pytest
 
-from tex_timelapse.actions.compile_latex import (
+from tex_timelapse.core.actions.compile_latex import (
     CompileLatexAction,
     _texliveonfly_engine,
     parse_diff_hunks,
 )
-from tex_timelapse.snapshot import Snapshot, SnapshotStatus
+from tex_timelapse.core.snapshot import Snapshot, SnapshotStatus
 
 
 # ---------------------------------------------------------------------------

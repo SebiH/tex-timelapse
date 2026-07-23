@@ -2,10 +2,10 @@ import os
 from shutil import rmtree
 import pypdfium2 as pdfium  # type: ignore[import-untyped]  # no py.typed marker/stubs published
 from PIL import Image
-from tex_timelapse.actions.action import Action
-from tex_timelapse.project import Project
-from tex_timelapse.snapshot import Snapshot, SnapshotStatus
-from tex_timelapse.pdfium_lock import PDFIUM_LOCK
+from tex_timelapse.core.actions.action import Action
+from tex_timelapse.core.project import Project
+from tex_timelapse.core.snapshot import Snapshot, SnapshotStatus
+from tex_timelapse.core.pdfium_lock import PDFIUM_LOCK
 
 # pdftoppm rasterises at 150 DPI by default, while pypdfium2 renders at a
 # native 72 DPI (1 PDF point == 1 pixel at scale 1). Scale by 150/72 to

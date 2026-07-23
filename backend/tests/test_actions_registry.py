@@ -1,18 +1,18 @@
-"""Tests for tex_timelapse.actions' registry: the single source of truth for
+"""Tests for tex_timelapse.core.actions' registry: the single source of truth for
 the pipeline's ordered stages (see the module docstring - this used to be
 duplicated four times and drifted)."""
 
-from tex_timelapse.actions import (
+from tex_timelapse.core.actions import (
     ACTION_CLASSES,
     create_actions,
     create_and_init_actions,
     get_stage_names,
 )
-from tex_timelapse.actions.assemble_image import AssembleImageAction
-from tex_timelapse.actions.compile_latex import CompileLatexAction
-from tex_timelapse.actions.init_repo import InitRepoAction
-from tex_timelapse.actions.pdf_to_image import PdfToImageAction
-from tex_timelapse.actions.replace_text import ReplaceTextAction
+from tex_timelapse.core.actions.assemble_image import AssembleImageAction
+from tex_timelapse.core.actions.compile_latex import CompileLatexAction
+from tex_timelapse.core.actions.init_repo import InitRepoAction
+from tex_timelapse.core.actions.pdf_to_image import PdfToImageAction
+from tex_timelapse.core.actions.replace_text import ReplaceTextAction
 
 
 def test_action_classes_order():

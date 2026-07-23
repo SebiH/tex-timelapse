@@ -1,4 +1,4 @@
-"""API tests for tex_timelapse.webserver, using Flask's test client - no real
+"""API tests for tex_timelapse.api.server, using Flask's test client - no real
 server process, no network. Covers the basic project routes, the async job
 endpoints, plus the getImage path-traversal regression (see commit 50eedb0
 "Sanitize user-controlled paths and fix snapshot API responses")."""
@@ -6,7 +6,7 @@ endpoints, plus the getImage path-traversal regression (see commit 50eedb0
 import pytest
 import yaml
 
-import tex_timelapse.webserver as webserver_mod
+import tex_timelapse.api.server as webserver_mod
 
 VALID_SHA = 'a' * 40
 
@@ -93,7 +93,7 @@ def job_server(isolated_cwd):
     """A WebServer + test client. start_background_task is NOT auto-run here;
     each test decides whether the render body executes, so it can observe a
     job while it is still RUNNING."""
-    from tex_timelapse.webserver import WebServer
+    from tex_timelapse.api.server import WebServer
 
     server = WebServer()
     server.app.testing = True

@@ -1,9 +1,9 @@
-"""Unit tests for tex_timelapse.jobs.JobManager - the in-process render job
+"""Unit tests for tex_timelapse.api.jobs.JobManager - the in-process render job
 registry backing the async job API."""
 
 import pytest
 
-from tex_timelapse.jobs import JobManager, JobStatus
+from tex_timelapse.api.jobs import JobManager, JobStatus
 
 
 def test_create_returns_running_job_with_unique_id():
