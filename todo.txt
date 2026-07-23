@@ -18,9 +18,10 @@
     - [ ] templates for image cropping
     - [ ] flag for 'force completion' with hint that it may result in weird pages
 - [ ] video view
-- [ ] update README
+- [x] update README
 - Optimizations / features
-    - [ ] Split snapshot slider into multiple components
+    - [x] Split snapshot slider into multiple components
+          (shared bar geometry/colour extracted to features/histogram/histogram-utils.ts)
     - [ ] if previous snapshots failed, add highlight in current snapshot (requires sequential rendering)
     - [ ] stage-based rendering to individual rendering?
     - [ ] allow import onto existing project (extending it)?
@@ -30,3 +31,11 @@
     - [ ] blur relative to image size
 - Bugs
     - diss: not compiling (lualatex?) -> check if "apk --no-cache add texmf-dist-most" can replace latex installation (and texliveonfly)
+        - LIKELY ROOT CAUSE FOUND: texliveonfly defaults to pdflatex and accepts
+          -c/--compiler, but compile_latex.py never passes it. So selecting
+          LuaLaTeX/XeTeX in the UI only changes latexCmd - texliveonfly still
+          probes the document with pdflatex, resolving the wrong package set.
+          On a lualatex-only document that probe fails and the packages it
+          should have installed never get installed.
+        - Same call is also a full redundant compile before every real compile
+          (~2.3x measured on the dominant pipeline stage) - fix both together.
