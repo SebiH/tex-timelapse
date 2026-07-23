@@ -288,22 +288,22 @@ export const TimelapseSettings = ({ project }: TimelapseSettingsProps) => {
                     <div className='grid grid-cols-2 gap-4'>
                         <div className='grid gap-3'>
                             <Label>Crop Top {config.cropTwoPage && '(even)'}</Label>
-                            <Input type='number' placeholder='3' />
+                            <Input type='number' placeholder='0' value={config.cropTop} onChange={e => updateNumberConfig('cropTop', e.target.valueAsNumber)} min={0} />
                         </div>
                         <div className='grid gap-3'>
                             <Label>Crop Bottom {config.cropTwoPage && '(even)'}</Label>
-                            <Input type='number' placeholder='4' />
+                            <Input type='number' placeholder='0' value={config.cropBottom} onChange={e => updateNumberConfig('cropBottom', e.target.valueAsNumber)} min={0} />
                         </div>
                     </div>
 
                     <div className='grid grid-cols-2 gap-4'>
                         <div className='grid gap-3'>
                             <Label>Crop Left {config.cropTwoPage && '(even)'}</Label>
-                            <Input type='number' placeholder='3' />
+                            <Input type='number' placeholder='0' value={config.cropLeft} onChange={e => updateNumberConfig('cropLeft', e.target.valueAsNumber)} min={0} />
                         </div>
                         <div className='grid gap-3'>
                             <Label>Crop Right {config.cropTwoPage && '(even)'}</Label>
-                            <Input type='number' placeholder='4' />
+                            <Input type='number' placeholder='0' value={config.cropRight} onChange={e => updateNumberConfig('cropRight', e.target.valueAsNumber)} min={0} />
                         </div>
                     </div>
                 </>}
@@ -312,22 +312,22 @@ export const TimelapseSettings = ({ project }: TimelapseSettingsProps) => {
                     <div className='grid grid-cols-2 gap-4'>
                         <div className='grid gap-3'>
                             <Label>Crop Top (odd)</Label>
-                            <Input type='number' placeholder='3' />
+                            <Input type='number' placeholder='0' value={config.cropAltTop} onChange={e => updateNumberConfig('cropAltTop', e.target.valueAsNumber)} min={0} />
                         </div>
                         <div className='grid gap-3'>
                             <Label>Crop Bottom (odd)</Label>
-                            <Input type='number' placeholder='4' />
+                            <Input type='number' placeholder='0' value={config.cropAltBottom} onChange={e => updateNumberConfig('cropAltBottom', e.target.valueAsNumber)} min={0} />
                         </div>
                     </div>
 
                     <div className='grid grid-cols-2 gap-4'>
                         <div className='grid gap-3'>
                             <Label>Crop Left (odd)</Label>
-                            <Input type='number' placeholder='3' />
+                            <Input type='number' placeholder='0' value={config.cropAltLeft} onChange={e => updateNumberConfig('cropAltLeft', e.target.valueAsNumber)} min={0} />
                         </div>
                         <div className='grid gap-3'>
                             <Label>Crop Right (odd)</Label>
-                            <Input type='number' placeholder='4' />
+                            <Input type='number' placeholder='0' value={config.cropAltRight} onChange={e => updateNumberConfig('cropAltRight', e.target.valueAsNumber)} min={0} />
                         </div>
                     </div>
                 </>}

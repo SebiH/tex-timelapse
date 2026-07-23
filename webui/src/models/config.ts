@@ -7,7 +7,6 @@ export type TimelapseConfig = {
     blur: number;
     highlightChanges: boolean;
 
-    useMultithreading: boolean;
     workers: number;
 
     startCommit: string;

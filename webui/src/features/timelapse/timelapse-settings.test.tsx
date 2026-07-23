@@ -31,7 +31,6 @@ function makeConfig(overrides: Partial<TimelapseConfig> = {}): TimelapseConfig {
         framerate: 4,
         blur: 0,
         highlightChanges: true,
-        useMultithreading: true,
         workers: 1,
         startCommit: '',
         endCommit: '',
