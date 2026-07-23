@@ -1,6 +1,7 @@
 import os
 from typing import List, Tuple
 from tex_timelapse.actions.action import Action
+from tex_timelapse.config import Config
 from tex_timelapse.project import Project
 from tex_timelapse.snapshot import Snapshot, SnapshotStatus
 from PIL import Image, ImageFilter, ImageDraw
@@ -40,11 +41,41 @@ def pad_or_trim_images(images: List[Image.Image], target_count: int, image_size:
     return images
 
 
+def crop_box_for_page(config: Config, page_index: int, width: int, height: int) -> Tuple[int, int, int, int]:
+    """The PIL crop box (left, top, right, bottom) for one rendered page.
+
+    Insets are pixel counts from each edge of the full-resolution (150-DPI)
+    page image, applied before any fit-scale/resize. They come straight
+    from config.crop{Left,Right,Top,Bottom} - or, when config.cropTwoPage is
+    on, from the cropAlt* variants for odd (0-based) page_index - modelling
+    a mirrored two-page layout (e.g. the ACM single-column template) where
+    even and odd pages have swapped margins.
+
+    Returns the full, uncropped box (0, 0, width, height) - a no-op crop -
+    when cropping is disabled, or defensively when the configured insets
+    would leave a zero or negative-size image behind. Never raises, never
+    produces a degenerate crop.
+    """
+    if not config.crop:
+        return (0, 0, width, height)
+
+    if config.cropTwoPage and page_index % 2 != 0:
+        left, right, top, bottom = config.cropAltLeft, config.cropAltRight, config.cropAltTop, config.cropAltBottom
+    else:
+        left, right, top, bottom = config.cropLeft, config.cropRight, config.cropTop, config.cropBottom
+
+    if left + right >= width or top + bottom >= height:
+        return (0, 0, width, height)
+
+    return (left, top, width - right, height - bottom)
+
+
 class AssembleImageAction(Action):
     def getName(self) -> str:
         return 'Assemble Image'
 
     def init(self, project: Project) -> None:
+        self.config = project.config
         self.blur = project.config.blur
         self.rows = project.config.rows
         self.columns = project.config.columns
@@ -62,24 +93,44 @@ class AssembleImageAction(Action):
         # them against the workdir's images folder to get real paths.
         rawImages = sorted(f'{workDir}/images/{page}' for page in snapshot.pages)
 
-        # Retrieve image size from the first image
-        image_size = Image.open(rawImages[0]).size
+        if len(rawImages) == 0:
+            raise Exception(f'No images found for {snapshot.commit_sha}')
+
+        rawOpened = [Image.open(p) for p in rawImages]
+
+        # Pages are assumed to share one physical size (true for any
+        # normal LaTeX document) - the crop box is computed against page
+        # 0's raw dimensions and reused for every page's own parity.
+        raw_width, raw_height = rawOpened[0].size
+
+        # Per-page crop boxes in raw (150-DPI) pixel space. crop_box_for_page
+        # already returns the full, uncropped box when cropping is off, so
+        # everything below can treat "cropped" and "uncropped" uniformly.
+        crop_boxes = [crop_box_for_page(self.config, i, raw_width, raw_height) for i in range(len(rawOpened))]
+
+        # Reference dimensions for the 1920x1080 fit-scale: the cropped size
+        # of page 0. Two-page crops can legitimately size even/odd pages
+        # differently (asymmetric margins); this mirrors the pre-crop
+        # code's practice of sizing the whole grid off image 0.
+        ref_left, ref_top, ref_right, ref_bottom = crop_boxes[0]
+        ref_width, ref_height = ref_right - ref_left, ref_bottom - ref_top
+
+        # Check if the resulting image size is too large and downscale as needed
+        scale = 1.0
+        if ref_width * self.columns > 1920 or ref_height * self.rows > 1080:
+            scale = min(1920.0 / (ref_width * self.columns), 1080.0 / (ref_height * self.rows))
+
+        image_size = (int(ref_width * scale), int(ref_height * scale))
         image_width, image_height = image_size
 
-        # Check if the resulting image size is too large to downscale images as needed
-        scale = 1.0
-        if image_width * self.columns > 1920 or image_height * self.rows > 1080:
-            scale = min(1920.0 / (image_width * self.columns), 1080.0 / (image_height * self.rows))
-            image_size = (int(image_width * scale), int(image_height * scale))
-            image_width, image_height = image_size
-
-        if self.blur > 0:
-            images = [Image.open(i).resize(image_size, Image.Resampling.NEAREST).filter(ImageFilter.GaussianBlur(self.blur)) for i in rawImages]
-        else:
-            images = [Image.open(i).resize(image_size, Image.Resampling.NEAREST) for i in rawImages]
-
-        if (len(images) == 0):
-            raise Exception(f'No images found for {snapshot.commit_sha}')
+        images = []
+        for rawImg, box in zip(rawOpened, crop_boxes):
+            cropped = rawImg.crop(box)
+            target_size = (int((box[2] - box[0]) * scale), int((box[3] - box[1]) * scale))
+            resized = cropped.resize(target_size, Image.Resampling.NEAREST)
+            if self.blur > 0:
+                resized = resized.filter(ImageFilter.GaussianBlur(self.blur))
+            images.append(resized)
 
         # Fill array with empty images if there are not enough pages, or trim
         # if there are too many to fit in the frame
@@ -90,38 +141,52 @@ class AssembleImageAction(Action):
         for i in range(len(images)):
             drawImages.append(Image.new('RGBA', images[i].size, '#FFFFFF00'))
 
-        # Image crop - only works for ACM single column template
-        # for i in range(len(images)):
-        #     if i % 2 != 0:
-        #         images[i] = images[i].crop((200, 130, 1150, 1380))
-        #     else:
-        #         images[i] = images[i].crop((130, 130, 1080, 1380))
-
         if self.highlightChanges:
 
             texFile = snapshot.main_tex_file
             pdfFile = texFile[:-4] + '.pdf'
             pdf_size = self.get_pdf_dimensions(f'{workDir}/{pdfFile}')
 
+            # Where a point would land if the FULL (uncropped) page were
+            # rendered at this run's fit-scale. Every page's crop offset is
+            # expressed in these same units so it can be subtracted
+            # directly from the h/v this yields below.
+            raw_scaled_size = (raw_width * scale, raw_height * scale)
+
             # highlight entire pages first
             for synctexInfo in snapshot.changed_pages:
                 page_num = int(synctexInfo['page'])
                 if page_num and page_num <= len(drawImages):
-                    drawImages[page_num - 1] = Image.new('RGBA', images[0].size, '#A3BE8C44')
+                    drawImages[page_num - 1] = Image.new('RGBA', images[page_num - 1].size, '#A3BE8C44')
 
             # draw in more detailed changes
             for synctexInfo in snapshot.changed_pages:
                 page_num = int(synctexInfo['page'])
+                # changed_pages is derived from git diff/synctex output, not
+                # necessarily bounded by the pages actually rendered - fall
+                # back to page 0's crop for an out-of-range page number
+                # rather than indexing off the end of crop_boxes.
+                page_index = page_num - 1 if 0 < page_num <= len(crop_boxes) else 0
 
-                x, y, h, v, W, H = self.convert_synctex_to_image_coords(pdf_size, image_size, synctexInfo)
+                x, y, h, v, W, H = self.convert_synctex_to_image_coords(pdf_size, raw_scaled_size, synctexInfo)
 
-                padding = image_width // 10
+                # Shift from "full uncropped page" space into this page's
+                # cropped local origin - the crop offset has to be scaled
+                # the same way the page image itself was.
+                crop_left, crop_top, _, _ = crop_boxes[page_index]
+                h -= int(crop_left * scale)
+                v -= int(crop_top * scale)
 
-                # for webui
-                synctexInfo['x1'] = float(h - padding) / float(image_width)
-                synctexInfo['y1'] = float(v - padding) / float(image_height)
-                synctexInfo['x2'] = float(h + W + padding) / float(image_width)
-                synctexInfo['y2'] = float(v + H + padding) / float(image_height)
+                page_size = images[page_index].size if page_index < len(images) else image_size
+                page_width, page_height = page_size
+
+                padding = page_width // 10
+
+                # for webui - normalised to this page's own (cropped) size
+                synctexInfo['x1'] = float(h - padding) / float(page_width)
+                synctexInfo['y1'] = float(v - padding) / float(page_height)
+                synctexInfo['x2'] = float(h + W + padding) / float(page_width)
+                synctexInfo['y2'] = float(v + H + padding) / float(page_height)
 
                 if not page_num or page_num > len(drawImages):
                     continue
