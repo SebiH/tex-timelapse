@@ -280,4 +280,11 @@ class WebServer:
         # outside a container. The default stays loopback-only so running the
         # server on a workstation does not silently expose it to the network;
         # the Docker image passes --host 0.0.0.0 explicitly.
-        self.socketio.run(self.app, host=host, port=port)
+        #
+        # allow_unsafe_werkzeug=True: with no eventlet/gevent installed,
+        # Flask-SocketIO >=5 falls back to the Werkzeug dev server and then
+        # refuses to start without this flag. tex-timelapse is a single-user
+        # local/containerised tool, not a public production server, and the
+        # dev server is exactly what it wants - so opt in explicitly rather
+        # than crash on startup.
+        self.socketio.run(self.app, host=host, port=port, allow_unsafe_werkzeug=True)
