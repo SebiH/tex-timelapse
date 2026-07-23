@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+
+# Cancel superseded runs on the same ref (e.g. rapid pushes to a PR branch).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: backend (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Matches backend/pyproject.toml requires-python = ">=3.10".
+        python-version: ['3.10', '3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install backend (with dev extras)
+        run: pip install -e "./backend[dev]"
+
+      - name: mypy
+        # A clean CI runner has no /mnt drvfs mount, so the .mypy_cache
+        # sqlite gotcha from the WSL checkout does not apply here - no
+        # --cache-dir needed.
+        run: mypy src/tex_timelapse
+        working-directory: backend
+
+      - name: pytest
+        # LaTeX/ffmpeg are not installed on the runner; the suite fakes
+        # subprocesses at the Snapshot.execute_cmd boundary and mocks
+        # pypdfium2, and any binary-dependent test is marked `slow` and
+        # skips when the binary is absent.
+        run: python -m pytest -q
+        working-directory: backend
+
+  webui:
+    name: webui
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Vite 5 / @vitejs/plugin-react-swc require Node >= 18.
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: webui/package-lock.json
+
+      - name: Install
+        run: npm ci
+        working-directory: webui
+
+      - name: Lint
+        run: npm run lint
+        working-directory: webui
+
+      - name: Test
+        run: npm run test
+        working-directory: webui
+
+      - name: Build
+        run: npm run build
+        working-directory: webui
+
+  docker:
+    name: docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Build both image targets to validate the Dockerfile (no push). The
+      # app target installs TeX Live scheme-small, so this is the slow job;
+      # gha cache keeps subsequent runs reasonable.
+      - name: Build webui image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: webui
+          push: false
+          cache-from: type=gha,scope=webui
+          cache-to: type=gha,mode=max,scope=webui
+
+      - name: Build app image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: app
+          push: false
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,mode=max,scope=app
