@@ -1,15 +1,5 @@
-pillow
-types-Pillow
-alive_progress
-ffmpeg-progress-yield
-gitpython
-numpy
-pyyaml
-types-PyYAML
-python-slugify
-types-python-slugify
-flask
-flask-socketio
-flask-cors
-pypdfium2
-pytest
+# The backend is now a packaged project under backend/ (see backend/pyproject.toml).
+# This file is kept so `pip install -r requirements.txt` from the repo root
+# still works; it installs the backend in editable mode with its dev extras
+# (pytest, mypy, type stubs). Prefer `pip install -e "./backend[dev]"` directly.
+-e ./backend[dev]

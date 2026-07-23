@@ -12,81 +12,6 @@ from tex_timelapse.core.actions import create_and_init_actions, get_stage_names
 
 
 ############################
-# Argument parsing
-############################
-
-parser = argparse.ArgumentParser(description='Visualize the creation of a LaTeX document as timelapse.')
-
-subparsers = parser.add_subparsers(dest='action')
-subparsers.required = True
-
-# ------------
-# --- init ---
-# ------------
-initParser = subparsers.add_parser(
-    'init', help='Initialize a new project')
-
-initParser.add_argument(
-    'project',
-    type=str,
-    help='Name of the project')
-
-initParser.add_argument(
-    'source',
-    type=str,
-    help='Source folder containing the .git repository of the LaTeX project')
-
-# -----------
-# --- run ---
-# -----------
-runParser = subparsers.add_parser(
-    'run', help='Run a project')
-
-runParser.add_argument(
-    'project',
-    type=str,
-    help='Name of the project')
-
-runParser.add_argument(
-    'output',
-    type=str,
-    help='Output')
-
-runParser.add_argument(
-    '--stage',
-    type=str,
-    help='Start from stage (default: all). Name of one of the pipeline actions '
-         '(e.g. "Init Repository", "Replace Text", "Compile LaTeX", "PDF to Image", '
-         '"Assemble Image"), case-insensitive.')
-
-# TODO: non-project-specific general arguments; add these to docker-compose.yml
-# workers: int # TODO: -1 should set to cpu count; 1 should disable multiprocessing
-
-# ------------
-# --- list ---
-# ------------
-listParser = subparsers.add_parser('list', help='List all projects')
-
-# --------------
-# --- server ---
-# --------------
-serverParser = subparsers.add_parser('server', help='Server')
-
-serverParser.add_argument(
-    '--host',
-    type=str,
-    default='127.0.0.1',
-    help='Interface to bind to. Defaults to loopback only; use 0.0.0.0 to '
-         'accept connections from other machines (required in a container).')
-
-serverParser.add_argument(
-    '--port',
-    type=int,
-    default=5000,
-    help='Port to listen on (default: 5000)')
-
-
-############################
 # Actions
 ############################
 
@@ -127,17 +52,93 @@ def listProjects():
 # Main
 ############################
 
-args = parser.parse_args()
 
-if (args.action == 'init'):
-    Project.create(args.project, args.source)
-elif (args.action == 'run'):
-    runProject(args.project, args.output, args)
-elif (args.action == 'list'):
-    listProjects()
-elif (args.action == 'server'):
-    WebServer().run(host=args.host, port=args.port)
-    
-else:
-    print(f"Unknown action '{args.action}'")
-    parser.print_help()
+def main() -> None:
+    parser = argparse.ArgumentParser(description='Visualize the creation of a LaTeX document as timelapse.')
+
+    subparsers = parser.add_subparsers(dest='action')
+    subparsers.required = True
+
+    # ------------
+    # --- init ---
+    # ------------
+    initParser = subparsers.add_parser(
+        'init', help='Initialize a new project')
+
+    initParser.add_argument(
+        'project',
+        type=str,
+        help='Name of the project')
+
+    initParser.add_argument(
+        'source',
+        type=str,
+        help='Source folder containing the .git repository of the LaTeX project')
+
+    # -----------
+    # --- run ---
+    # -----------
+    runParser = subparsers.add_parser(
+        'run', help='Run a project')
+
+    runParser.add_argument(
+        'project',
+        type=str,
+        help='Name of the project')
+
+    runParser.add_argument(
+        'output',
+        type=str,
+        help='Output')
+
+    runParser.add_argument(
+        '--stage',
+        type=str,
+        help='Start from stage (default: all). Name of one of the pipeline actions '
+             '(e.g. "Init Repository", "Replace Text", "Compile LaTeX", "PDF to Image", '
+             '"Assemble Image"), case-insensitive.')
+
+    # TODO: non-project-specific general arguments; add these to docker-compose.yml
+    # workers: int # TODO: -1 should set to cpu count; 1 should disable multiprocessing
+
+    # ------------
+    # --- list ---
+    # ------------
+    listParser = subparsers.add_parser('list', help='List all projects')
+
+    # --------------
+    # --- server ---
+    # --------------
+    serverParser = subparsers.add_parser('server', help='Server')
+
+    serverParser.add_argument(
+        '--host',
+        type=str,
+        default='127.0.0.1',
+        help='Interface to bind to. Defaults to loopback only; use 0.0.0.0 to '
+             'accept connections from other machines (required in a container).')
+
+    serverParser.add_argument(
+        '--port',
+        type=int,
+        default=5000,
+        help='Port to listen on (default: 5000)')
+
+    args = parser.parse_args()
+
+    if (args.action == 'init'):
+        Project.create(args.project, args.source)
+    elif (args.action == 'run'):
+        runProject(args.project, args.output, args)
+    elif (args.action == 'list'):
+        listProjects()
+    elif (args.action == 'server'):
+        WebServer().run(host=args.host, port=args.port)
+
+    else:
+        print(f"Unknown action '{args.action}'")
+        parser.print_help()
+
+
+if __name__ == '__main__':
+    main()

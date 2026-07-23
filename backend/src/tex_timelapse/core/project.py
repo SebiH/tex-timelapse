@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 import subprocess
 import os
-from pathlib import Path
 import shutil
 from typing import Any, Dict, List, Optional
 import git
@@ -9,6 +8,7 @@ from slugify import slugify
 
 from tex_timelapse.core.config import Config
 from tex_timelapse.core.snapshot import Snapshot
+from tex_timelapse.paths import default_config_path, projects_root
 import yaml
 
 @dataclass
@@ -19,7 +19,7 @@ class Project:
 
     def __init__(self, name: str):
         self.name = name
-        self.projectFolder = f'./projects/{slugify(self.name)}'
+        self.projectFolder = str(projects_root() / slugify(self.name))
         self.snapshots: List[Snapshot] = []
 
     def loadSnapshots(self):
@@ -59,7 +59,7 @@ class Project:
     @staticmethod
     def list() -> list['Project']:
         projects = []
-        for file in Path('projects').glob('**/project.yaml'):
+        for file in projects_root().glob('**/project.yaml'):
             with open(file, 'r') as f:
                 data = yaml.safe_load(f)
             name = data.get('name') if data else None
@@ -72,14 +72,14 @@ class Project:
         """Raw contents of default_config.yaml, used as the fallback for
         any config field missing from a project's own project.yaml."""
         try:
-            with open('./default_config.yaml', 'r') as f:
+            with open(default_config_path(), 'r') as f:
                 return yaml.safe_load(f) or {}
         except FileNotFoundError:
             return {}
 
     @staticmethod
     def deserialize(name: str, defaults: Optional[Dict[str, Any]] = None) -> 'Project':
-        with open(f'./projects/{slugify(name)}/project.yaml', 'r') as f:
+        with open(projects_root() / slugify(name) / 'project.yaml', 'r') as f:
             data = yaml.safe_load(f) or {}
 
         # config fields missing from this project's own project.yaml fall
@@ -99,9 +99,9 @@ class Project:
         print(f'Creating project "{name}" with default values...')
         
         project = Project(name)
-        
+
         # create folder
-        folder = f'./projects/{slugify(name)}'
+        folder = str(projects_root() / slugify(name))
         os.makedirs(folder, exist_ok=True)
 
         # init source folder
