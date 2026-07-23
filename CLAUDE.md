@@ -6,21 +6,44 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Turns the git history of a LaTeX project into a timelapse video. Each commit becomes a "snapshot": the repo is reset to that commit, compiled to PDF, rasterized to page images, and tiled into one grid frame. All frames are then encoded with ffmpeg. Changed regions are highlighted by mapping `git diff` line numbers to PDF coordinates via synctex.
 
-Two frontends over the same pipeline: a CLI (`tex-timelapse.py`) and a Flask + Socket.IO server driving a React web UI (`webui/`).
+Two frontends over the same pipeline: a CLI (`tex-timelapse` console script / repo-root `tex-timelapse.py` shim) and a Flask + Socket.IO server driving a React web UI (`webui/`).
+
+## Layout
+
+The backend is a packaged project under `backend/` (src layout):
+
+```
+backend/
+  pyproject.toml            deps, [project.scripts] tex-timelapse = tex_timelapse.cli:main
+  src/tex_timelapse/
+    cli.py                  argparse entry (main())
+    paths.py                default_config_path() / projects_root() — no CWD assumptions
+    default_config.yaml     shipped as package-data
+    core/                   compiler, project, snapshot, config, pdfium_lock, reporter (ABC), actions/  — MUST NOT import flask
+    api/                    server (Flask+Socket.IO), jobs
+    reporters/              terminal_reporter (no flask), web_reporter / job_reporter (flask)
+  tests/                    pytest suite
+tex-timelapse.py            repo-root shim: adds backend/src to sys.path, calls cli.main
+```
+
+`test_architecture.py` enforces that nothing under `core/` (plus `reporter.py`) imports flask/flask_socketio.
 
 ## Commands
 
-Python (run from repo root — paths like `./projects` and `./default_config.yaml` are relative to CWD):
+Backend (a packaged project; `default_config.yaml` resolves via the package, `projects/` defaults to `$CWD/projects`, override with `TEX_TIMELAPSE_PROJECTS_DIR`):
 
 ```bash
-pip install -r requirements.txt
-python tex-timelapse.py init <name> <source.zip>   # only .zip sources are supported
-python tex-timelapse.py run <name> <output>        # output = mp4 basename
-python tex-timelapse.py list
-python tex-timelapse.py server                     # Flask on :5000
-mypy tex_timelapse                                 # typed codebase, no config file
-python -m pytest -q                                # backend test suite (tests/)
+pip install -e "./backend[dev]"                    # or: pip install -r requirements.txt (same thing)
+tex-timelapse init <name> <source.zip>             # console script; only .zip sources
+tex-timelapse run <name> <output>                  # output = mp4 basename
+tex-timelapse list
+tex-timelapse server                               # Flask on :5000
+python tex-timelapse.py <args>                      # repo-root shim, works without install
+cd backend && python -m pytest -q                  # backend test suite
+mypy backend/src/tex_timelapse --cache-dir=<off-drvfs>   # see the mypy gotcha below
 ```
+
+Note this checkout's setuptools was too old (59) for PEP 621; `pip install` the backend needs setuptools ≥64 (≥61 to even read `[project]`). Docker's Python 3.11 image is fine.
 
 Web UI (`webui/`, Vite + React 18 + shadcn/ui + Tailwind):
 
@@ -32,7 +55,7 @@ npm run lint
 npm run test     # vitest + React Testing Library
 ```
 
-The dev server proxy is the only wiring between the two halves — Flask does **not** serve the built web UI, and the Dockerfile does not build it. Running the UI means running `python tex-timelapse.py server` and `npm run dev` side by side.
+The dev server proxy is the only wiring between the two halves — Flask does **not** serve the built web UI, and the Dockerfile does not build it. Running the UI means running `tex-timelapse server` and `npm run dev` side by side.
 
 Tests: `pytest` for the backend (`tests/`, no LaTeX/ffmpeg needed — subprocesses are faked at the `Snapshot.execute_cmd` boundary and pypdfium2 is mocked), `vitest` + RTL for the web UI. An architecture test (`tests/test_architecture.py`) asserts no core pipeline module imports `flask`, guarding a planned `core/` vs `api/` split.
 
@@ -69,9 +92,9 @@ output/           <output>.mp4
 ## Gotchas
 
 - `snapshots.yaml` is loaded with `yaml.CBaseLoader`, so **every value comes back as a string** — always cast when reading snapshot fields. Config is no longer like this: `config.py` defines a `Config` dataclass built via `Config.from_dict()`, which coerces once at load, so downstream code can rely on real `int`/`float`/`bool`/`str`. The coercion is needed because `project.yaml` keeps whatever type was written and the web UI historically POSTed `e.target.value` strings for numeric fields. Note the bool rule: `'false'`, `'False'`, `'0'`, `''` are False, every other string is True — plain `bool('false')` would be `True`.
-- The action pipeline is defined **once** in `tex_timelapse/actions/__init__.py` (`ACTION_CLASSES`, `create_actions()`, `create_and_init_actions()`, `get_stage_names()`). Add a new stage there and every call site picks it up. It used to be duplicated four times, and a stage was already missed once as a result.
+- The action pipeline is defined **once** in `core/actions/__init__.py` (`ACTION_CLASSES`, `create_actions()`, `create_and_init_actions()`, `get_stage_names()`). Add a new stage there and every call site picks it up. It used to be duplicated four times, and a stage was already missed once as a result.
 - `Action.init()` is called exactly once, in the calling thread, before the pool fans out — never from a worker. After init, treat `Action` instances as read-only: they are shared across threads.
-- **PDFium is not thread-safe.** Every `pypdfium2` call must hold `PDFIUM_LOCK` (`tex_timelapse/pdfium_lock.py`). Without it, concurrent rendering segfaults the interpreter (exit 139) on roughly two runs in three.
+- **PDFium is not thread-safe.** Every `pypdfium2` call must hold `PDFIUM_LOCK` (`core/pdfium_lock.py`). Without it, concurrent rendering segfaults the interpreter (exit 139) on roughly two runs in three.
 - ffmpeg globs `frames/*.png`, so a dropped frame shifts the video rather than erroring. `compileProject` aborts before encoding if any snapshot ended `FAILED` (raising with the failing shas), unless `allowPartialRender: true` opts into encoding whatever succeeded. Note this is a status check *after* the loop, not an exception propagating out of `compileSnapshot` — that function catches action failures and returns a `FAILED`-status snapshot rather than raising.
 - `README.md` documents the old flag-based CLI (`tex-timelapse.py main.tex --rows ...`) and predates the project/subcommand model. Treat `tex-timelapse.py` and `default_config.yaml` as the source of truth; `todo.txt` tracks the actual roadmap.
 - On this WSL checkout, `mypy` crashes with a sqlite `unable to open database file` error because `.mypy_cache` lives on the `/mnt/s` drvfs mount. Pass `--cache-dir` pointing somewhere on the Linux filesystem.
