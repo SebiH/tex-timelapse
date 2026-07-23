@@ -1,5 +1,5 @@
 import os
-from typing import Tuple
+from typing import List, Tuple
 from tex_timelapse.actions.action import Action
 from tex_timelapse.project import Project
 from tex_timelapse.snapshot import Snapshot, SnapshotStatus
@@ -22,6 +22,22 @@ def pil_grid(images, max_horiz=np.iinfo(int).max):
     for i, im in enumerate(images):
         im_grid.paste(im, (h_sizes[i % n_horiz], v_sizes[i // n_horiz]))
     return im_grid
+
+
+def pad_or_trim_images(images: List[Image.Image], target_count: int, image_size: Tuple[int, int]) -> List[Image.Image]:
+    """Extend `images` with blank white frames until there are exactly
+    `target_count` of them, or drop trailing entries if there are already
+    more than that many. Mutates and returns `images`.
+
+    Extracted from AssembleImageAction.run for testability - no behaviour
+    change. Assumes `images` is already non-empty; that check stays in
+    run() because it needs the snapshot's commit sha for the error message.
+    """
+    while len(images) < target_count:
+        images.append(Image.new('RGB', image_size, color='white'))
+    while len(images) > target_count:
+        images.pop()
+    return images
 
 
 class AssembleImageAction(Action):
@@ -65,12 +81,9 @@ class AssembleImageAction(Action):
         if (len(images) == 0):
             raise Exception(f'No images found for {snapshot.commit_sha}')
 
-        # Fill array with empty images if there are not enough pages
-        while (len(images) < self.rows * self.columns):
-            images.append(Image.new('RGB', image_size, color='white'))
-        # Remove unnecessary pages that wouldn't fit in the frame
-        while ((len(images)) > self.rows * self.columns):
-            images.pop()
+        # Fill array with empty images if there are not enough pages, or trim
+        # if there are too many to fit in the frame
+        images = pad_or_trim_images(images, self.rows * self.columns, image_size)
 
         # images for drawing overlays
         drawImages = []

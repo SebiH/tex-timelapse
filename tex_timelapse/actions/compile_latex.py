@@ -6,6 +6,26 @@ from pathlib import Path
 import re
 import os
 
+
+def parse_diff_hunks(diff: str) -> Set[int]:
+    """Parse `git diff --unified=0` hunk headers (e.g. '@@ -33,5 +55,4 @@')
+    into the set of line numbers touched on either side of the hunk (both
+    the removed range from the '-' side and the added range from the '+'
+    side). The count after the comma is optional in git's own output when
+    it's exactly 1.
+
+    Extracted verbatim from CompileLatexAction.run for testability - no
+    behaviour change.
+    """
+    changed: Set[int] = set()
+    for match in re.finditer(r'@@\s+-(\d+),?(\d*)\s+\+(\d+),?(\d*)\s+@@', diff):
+        for x in range(int(match.group(1)), int(match.group(1)) + int(match.group(2) if match.group(2) else 0) + 1):
+            changed.add(x)
+        for x in range(int(match.group(3)), int(match.group(3)) + int(match.group(4) if match.group(4) else 0) + 1):
+            changed.add(x)
+    return changed
+
+
 class CompileLatexAction(Action):
     def getName(self) -> str:
         return 'Compile LaTeX'
@@ -48,13 +68,8 @@ class CompileLatexAction(Action):
             changedFiles[file] = set()
 
             if file.endswith('.tex'):
-                # The following code extracts these values and puts both removed and added lines into the changedLines array
-                gitDiffResults = re.finditer(r'@@\s+-(\d+),?(\d*)\s+\+(\d+),?(\d*)\s+@@', diff)
-                for match in gitDiffResults:
-                    for x in range(int(match.group(1)), int(match.group(1)) + int(match.group(2) if match.group(2) else 0) + 1):
-                        changedFiles[file].add(x)
-                    for x in range(int(match.group(3)), int(match.group(3)) + int(match.group(4) if match.group(4) else 0) + 1):
-                        changedFiles[file].add(x)
+                # extracts both removed and added line numbers from the diff hunks
+                changedFiles[file] = parse_diff_hunks(diff)
             else:
                 # since we might've added a file ending (but \includegraphics doesn't have to have one), we'll remove it again.
                 # TODO: this assumes a file ending of 4 characters, which is not always the case
