@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { TimelapseProject } from '@/models/project';
 import type { TimelapseConfig } from '@/models/config';
+import type { TimelapseJob } from '@/models/job';
 
 vi.mock('socket.io-client', () => ({
     io: () => ({ on: vi.fn() }),
@@ -12,7 +13,8 @@ vi.mock('@/api/client', () => ({
         resetProject: vi.fn(),
         resetSnapshot: vi.fn(),
         updateProjectConfig: vi.fn().mockResolvedValue(undefined),
-        runProject: vi.fn(),
+        startRender: vi.fn(),
+        cancelRender: vi.fn(),
     },
 }));
 
@@ -61,6 +63,20 @@ function makeProject(config: TimelapseConfig): TimelapseProject {
     };
 }
 
+function makeJob(overrides: Partial<TimelapseJob> = {}): TimelapseJob {
+    return {
+        id: 'job1',
+        project: 'demo',
+        output: 'demo',
+        status: 'running',
+        stage: '',
+        stage_length: 0,
+        stage_progress: 0,
+        error: '',
+        ...overrides,
+    };
+}
+
 // The compiler <Select> mirrors `UIState.project`, not the `project` prop
 // directly (see the subscription in timelapse-settings.tsx) - in the real
 // app, the page component (src/pages/Project.tsx) always calls
@@ -76,6 +92,7 @@ describe('TimelapseSettings', () => {
         vi.clearAllMocks();
         UIState.project.next(null);
         UIState.currentSnapshot.next(null);
+        UIState.activeJob.next(null);
     });
 
     it('reflects config.latexCmd in the compiler select (lualatex)', () => {
@@ -132,5 +149,40 @@ describe('TimelapseSettings', () => {
 
         expect(rowsInput).toHaveValue(7);
         expect(UIState.project.value?.config.rows).toBe(7);
+    });
+
+    describe('render controls', () => {
+        it('starts a render with the project name as the output basename', async () => {
+            const project = makeProject(makeConfig());
+            vi.mocked(api.startRender).mockResolvedValue(makeJob());
+            render(<TimelapseSettings project={project} />);
+
+            fireEvent.click(screen.getByRole('button', { name: /start/i }));
+
+            await waitFor(() => expect(api.startRender).toHaveBeenCalledWith('demo', 'demo'));
+        });
+
+        it('shows the current stage and progress, and swaps Start for Cancel, while a job is running', async () => {
+            const project = makeProject(makeConfig());
+            render(<TimelapseSettings project={project} />);
+
+            UIState.activeJob.next(makeJob({ stage: 'Compile LaTeX', stage_progress: 0.5 }));
+
+            expect(await screen.findByText('Compile LaTeX')).toBeInTheDocument();
+            expect(screen.getByText('50%')).toBeInTheDocument();
+            expect(screen.queryByRole('button', { name: /start/i })).not.toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
+        });
+
+        it('cancels the active job when Cancel is clicked', async () => {
+            const project = makeProject(makeConfig());
+            vi.mocked(api.cancelRender).mockResolvedValue(makeJob({ status: 'cancelled' }));
+            render(<TimelapseSettings project={project} />);
+            UIState.activeJob.next(makeJob({ stage: 'Compile LaTeX' }));
+
+            fireEvent.click(await screen.findByRole('button', { name: /cancel/i }));
+
+            await waitFor(() => expect(api.cancelRender).toHaveBeenCalledWith('job1'));
+        });
     });
 });

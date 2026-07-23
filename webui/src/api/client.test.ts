@@ -49,13 +49,55 @@ describe('api client', () => {
         });
     });
 
-    it('runProject issues a GET against the run endpoint', async () => {
-        const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ success: true }));
+    it('startRender POSTs the output basename and unwraps the job', async () => {
+        const job = { id: 'job1', project: 'demo', output: 'demo', status: 'running' };
+        const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ success: true, job }));
         vi.stubGlobal('fetch', fetchMock);
 
-        await api.runProject('demo');
+        const result = await api.startRender('demo', 'demo');
 
-        expect(fetchMock).toHaveBeenCalledWith('/api/projects/demo/run');
+        expect(fetchMock).toHaveBeenCalledWith('/api/projects/demo/jobs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ output: 'demo' }),
+        });
+        expect(result).toEqual(job);
+    });
+
+    it('startRender rejects with the server error when the job could not be created', async () => {
+        const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ success: false, error: 'already running' }));
+        vi.stubGlobal('fetch', fetchMock);
+
+        await expect(api.startRender('demo', 'demo')).rejects.toThrow('already running');
+    });
+
+    it('getJob requests the job-specific URL and unwraps the job', async () => {
+        const job = { id: 'job1', project: 'demo', output: 'demo', status: 'running' };
+        const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ success: true, job }));
+        vi.stubGlobal('fetch', fetchMock);
+
+        const result = await api.getJob('job1');
+
+        expect(fetchMock).toHaveBeenCalledWith('/api/jobs/job1');
+        expect(result).toEqual(job);
+    });
+
+    it('getJob rejects when the job is unknown', async () => {
+        const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ success: false, error: 'not found' }, { status: 404 }));
+        vi.stubGlobal('fetch', fetchMock);
+
+        await expect(api.getJob('missing')).rejects.toThrow('not found');
+    });
+
+    it('cancelRender issues a DELETE against the job endpoint and unwraps the job', async () => {
+        const job = { id: 'job1', project: 'demo', output: 'demo', status: 'cancelled' };
+        const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ success: true, job }));
+        vi.stubGlobal('fetch', fetchMock);
+
+        const result = await api.cancelRender('job1');
+
+        expect(fetchMock).toHaveBeenCalledWith('/api/jobs/job1', { method: 'DELETE' });
+        expect(result).toEqual(job);
     });
 
     it('resetProject issues a GET against the reset endpoint', async () => {
