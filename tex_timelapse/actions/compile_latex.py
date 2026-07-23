@@ -7,22 +7,49 @@ import re
 import os
 
 
+def _texliveonfly_engine(latexCmd: str) -> str:
+    """Pick the base TeX engine texliveonfly should probe with.
+
+    texliveonfly detects missing packages by running a base engine and
+    parsing its log, defaulting to pdflatex. If the project is built with
+    lualatex or xelatex, probing with pdflatex resolves the wrong package
+    set (or fails outright on a document that only compiles under lualatex) -
+    which is the likely cause of the long-standing 'diss: not compiling
+    (lualatex?)' bug in todo.txt.
+
+    We match the engine name anywhere in the configured command, so this
+    covers both a bare `lualatex ...` latexCmd and latexmk's
+    `-pdflatex='lualatex %O %S'` form (the shape the web UI's compiler
+    dropdown emits)."""
+    lowered = latexCmd.lower()
+    if 'lualatex' in lowered:
+        return 'lualatex'
+    if 'xelatex' in lowered:
+        return 'xelatex'
+    return 'pdflatex'
+
+
 def parse_diff_hunks(diff: str) -> Set[int]:
     """Parse `git diff --unified=0` hunk headers (e.g. '@@ -33,5 +55,4 @@')
     into the set of line numbers touched on either side of the hunk (both
     the removed range from the '-' side and the added range from the '+'
-    side). The count after the comma is optional in git's own output when
-    it's exactly 1.
+    side).
 
-    Extracted verbatim from CompileLatexAction.run for testability - no
-    behaviour change.
-    """
+    A hunk header is `@@ -a,b +c,d @@`: the removed side starts at line `a`
+    and spans `b` lines, the added side starts at `c` and spans `d`. git
+    omits the ',count' when the count is exactly 1, so a missing count means
+    one line; an explicit count of 0 (e.g. `-33,0` for a pure insertion)
+    means that side touches no lines. The changed lines are therefore
+    range(start, start + count), not start + count + 1 - the old code added
+    a spurious extra line to every hunk with an explicit count."""
     changed: Set[int] = set()
     for match in re.finditer(r'@@\s+-(\d+),?(\d*)\s+\+(\d+),?(\d*)\s+@@', diff):
-        for x in range(int(match.group(1)), int(match.group(1)) + int(match.group(2) if match.group(2) else 0) + 1):
-            changed.add(x)
-        for x in range(int(match.group(3)), int(match.group(3)) + int(match.group(4) if match.group(4) else 0) + 1):
-            changed.add(x)
+        removed_start = int(match.group(1))
+        removed_count = int(match.group(2)) if match.group(2) else 1
+        added_start = int(match.group(3))
+        added_count = int(match.group(4)) if match.group(4) else 1
+        changed.update(range(removed_start, removed_start + removed_count))
+        changed.update(range(added_start, added_start + added_count))
     return changed
 
 
@@ -32,8 +59,7 @@ class CompileLatexAction(Action):
 
     def init(self, project: Project) -> None:
         self.latexCmd = project.config.latexCmd
-        # TODO: texliveonfly?
-        pass
+        self.engine = _texliveonfly_engine(self.latexCmd)
 
     def cleanup(self) -> None:
         pass
@@ -41,18 +67,33 @@ class CompileLatexAction(Action):
     def run(self, snapshot: Snapshot) -> str:
         workDir = snapshot.getWorkDir()
         texFile = snapshot.main_tex_file
-        installCmd = f'texliveonfly {texFile}'
-
-        # ignore errors in case it somehow still compiled
-        snapshot.execute_cmd(installCmd, ignore_error=True)
-
         compileCmd = f'{self.latexCmd} {texFile}'
+        pdfFile = texFile[:-4] + '.pdf'
+        pdfPath = f'{workDir}/{pdfFile}'
+
+        # Compile first. texliveonfly detects missing packages by running a
+        # full compile of its own, so calling it unconditionally before every
+        # compile (as this used to) meant every snapshot was compiled twice -
+        # roughly doubling the pipeline's dominant cost. Instead compile
+        # directly, and only fall back to texliveonfly when no PDF appeared,
+        # which is the case a missing package would produce.
+        #
         # ignore errors in case it somehow still compiled
         output = snapshot.execute_cmd(compileCmd, ignore_error=True, posix=True)
 
+        if not os.path.exists(pdfPath):
+            # No PDF - possibly a missing package. Pull missing packages with
+            # texliveonfly (probing with the configured engine, not its
+            # pdflatex default), then compile once more. On a system with a
+            # complete TeX install this branch never runs; it exists for
+            # minimal installs (e.g. the Docker image's scheme-small) that
+            # rely on on-demand package installation.
+            installCmd = f'texliveonfly -c {self.engine} {texFile}'
+            snapshot.execute_cmd(installCmd, ignore_error=True)
+            output = snapshot.execute_cmd(compileCmd, ignore_error=True, posix=True)
+
         # check if the compilation was successful by checking if there's a pdf file
-        pdfFile = texFile[:-4] + '.pdf'
-        if not os.path.exists(f'{workDir}/{pdfFile}'):
+        if not os.path.exists(pdfPath):
             snapshot.error = output
             return SnapshotStatus.FAILED
 
