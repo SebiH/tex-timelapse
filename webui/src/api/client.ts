@@ -7,13 +7,15 @@
 // `success` field at all - so it gets its own parsing below instead of
 // reusing the envelope helpers.
 //
-// Keep this module thin: a later phase turns `/run` into async job endpoints,
-// and callers should only need their call sites touched, not this file's
-// shape, when that lands.
+// Rendering a project is an async job: `startRender` kicks one off and
+// returns immediately with a `TimelapseJob`, whose progress is then pushed
+// over Socket.IO (see `models/ui-state.ts`) and can also be polled with
+// `getJob` or stopped with `cancelRender`.
 
 import { TimelapseProject } from '@/models/project';
 import { TimelapseSnapshot } from '@/models/snapshot';
 import { TimelapseConfig } from '@/models/config';
+import { TimelapseJob } from '@/models/job';
 
 type ApiSuccess<T> = { success: true } & T;
 type ApiFailure = { success: false; error?: string };
@@ -51,6 +53,11 @@ async function post<T>(path: string, body: unknown): Promise<T> {
     return parseEnvelope<T>(response, path);
 }
 
+async function del<T>(path: string): Promise<T> {
+    const response = await fetch(path, { method: 'DELETE' });
+    return parseEnvelope<T>(response, path);
+}
+
 export const api = {
     async listProjects(): Promise<string[]> {
         const { projects } = await get<{ projects: string[] }>('/api/projects');
@@ -66,8 +73,19 @@ export const api = {
         await post<object>(`/api/projects/${name}`, { config });
     },
 
-    async runProject(name: string): Promise<void> {
-        await get<object>(`/api/projects/${name}/run`);
+    async startRender(name: string, output: string): Promise<TimelapseJob> {
+        const { job } = await post<{ job: TimelapseJob }>(`/api/projects/${name}/jobs`, { output });
+        return job;
+    },
+
+    async getJob(id: string): Promise<TimelapseJob> {
+        const { job } = await get<{ job: TimelapseJob }>(`/api/jobs/${id}`);
+        return job;
+    },
+
+    async cancelRender(id: string): Promise<TimelapseJob> {
+        const { job } = await del<{ job: TimelapseJob }>(`/api/jobs/${id}`);
+        return job;
     },
 
     async resetProject(name: string): Promise<void> {
